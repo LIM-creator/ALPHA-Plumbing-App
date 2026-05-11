@@ -306,21 +306,7 @@
           <select id="dash-month" onchange="renderDashboard()" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none"></select>
         </div>
         <div class="kpi-strip" id="dash-metrics"></div>
-        <div class="dash-section">
-          <div class="card">
-            <div class="card-title">Upcoming payments</div>
-            <div id="dash-upcoming"></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Recent invoices</div>
-            <div id="dash-invoices"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Recent transactions</div>
-          <div class="table-wrap" id="dash-transactions"></div>
-        </div>
-        <div class="grid2" style="margin-top:18px">
+        <div class="grid2" style="margin-bottom:18px">
           <div class="card">
             <div class="card-title">Quarterly overview</div>
             <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
@@ -331,12 +317,35 @@
             <div style="position:relative;height:200px"><canvas id="quarterlyChart" role="img" aria-label="Quarterly income expenses net bar chart">Quarterly overview</canvas></div>
           </div>
           <div class="card">
-            <div class="card-title">Monthly net profit trend</div>
+            <div class="card-title">Monthly net profit trend + average</div>
             <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
               <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:3px;border-radius:2px;background:#4f46e5;display:inline-block"></span>Net profit</span>
               <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:3px;border-radius:2px;background:#34d399;display:inline-block"></span>Income</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;border-radius:2px;background:#f97316;display:inline-block;border-top:2px dashed #f97316"></span>Avg net</span>
             </div>
-            <div style="position:relative;height:200px"><canvas id="annualChart" role="img" aria-label="Monthly income and net profit line chart">Monthly trend</canvas></div>
+            <div style="position:relative;height:200px"><canvas id="annualChart" role="img" aria-label="Monthly income and net profit line chart with average">Monthly trend</canvas></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-title">Monthly profit margin %</div>
+          <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#7c3aed;display:inline-block"></span>Margin %</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;border-radius:2px;background:#f97316;display:inline-block"></span>Avg margin</span>
+          </div>
+          <div style="position:relative;height:180px"><canvas id="marginChart" role="img" aria-label="Monthly profit margin histogram">Profit margin by month</canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-title">Recent transactions</div>
+          <div class="table-wrap" id="dash-transactions"></div>
+        </div>
+        <div class="dash-section">
+          <div class="card">
+            <div class="card-title">Upcoming payments</div>
+            <div id="dash-upcoming"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent invoices</div>
+            <div id="dash-invoices"></div>
           </div>
         </div>
       </div>
@@ -430,14 +439,20 @@
     <div class="modal-header"><div class="modal-title" id="tx-modal-title">Add Transaction</div><button class="modal-close" onclick="closeTxModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label>Type</label><select id="tx-type"><option value="in">Money In (Income)</option><option value="out">Money Out (Expense)</option></select></div>
+        <div class="form-group"><label>Type</label><select id="tx-type" onchange="updateTxCats()"><option value="in">Money In (Income)</option><option value="out">Money Out (Expense)</option></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="tx-date"></div>
         <div class="form-group form-full"><label>Description</label><input type="text" id="tx-desc" placeholder="e.g. Client payment — Pipe repair at Wangsa Maju"></div>
-        <div class="form-group"><label>Category</label><select id="tx-cat"></select></div>
+        <div class="form-group"><label>Category</label><select id="tx-cat" onchange="toggleExpenseSection()"></select></div>
         <div class="form-group"><label>Amount (RM)</label><input type="number" id="tx-amount" placeholder="0.00" min="0" step="0.01"></div>
         <div class="form-group"><label>Scheduled date (future payment)</label><input type="date" id="tx-scheduled"></div>
         <div class="form-group"><label>Linked invoice #</label><input type="text" id="tx-invoice" placeholder="INV-0001 (optional)"></div>
         <div class="form-group form-full"><label>Notes</label><textarea id="tx-notes" placeholder="Any additional details..."></textarea></div>
+      </div>
+      <div id="expense-section" style="display:none;margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1.5px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em">Related job expenses (optional)</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Add the expenses for this job so your net profit is accurate. These will be saved as linked expense transactions automatically.</div>
+        <div id="expense-lines"></div>
+        <button class="btn btn-sm" onclick="addExpenseLine()" style="margin-top:6px">+ Add expense item</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -752,7 +767,7 @@ async function renderDashboard() {
 // ── CASH FLOW ──────────────────────────────────────────────
 
 // ── DASHBOARD CHARTS ─────────────────────────────────────
-let qChart=null, aChart=null;
+let qChart=null, aChart=null, mChart=null;
 
 function renderDashboardCharts(txs) {
   // Filter out rows with no real date
@@ -798,7 +813,7 @@ function renderDashboardCharts(txs) {
     });
   }
 
-  // ── ANNUAL LINE CHART ──
+  // ── ANNUAL LINE CHART with average line ──
   const monthly = {};
   validTxs.forEach(t => {
     const mo = t.date.slice(0,7);
@@ -809,6 +824,8 @@ function renderDashboardCharts(txs) {
   const moLabels = Object.keys(monthly).sort();
   const moNet = moLabels.map(k=>Math.round(monthly[k].in - monthly[k].out));
   const moIn  = moLabels.map(k=>Math.round(monthly[k].in));
+  const avgNet = moNet.length ? Math.round(moNet.reduce((a,b)=>a+b,0)/moNet.length) : 0;
+  const avgLine = moLabels.map(()=>avgNet);
   const shortLabels = moLabels.map(m=>{
     const [yr,mo] = m.split('-');
     return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]+' '+yr.slice(2);
@@ -822,16 +839,46 @@ function renderDashboardCharts(txs) {
       data:{
         labels: shortLabels,
         datasets:[
-          {label:'Income', data:moIn,  borderColor:'#34d399', backgroundColor:'rgba(52,211,153,.08)', fill:true,  tension:0.4, pointRadius:2, borderWidth:2},
-          {label:'Net profit',data:moNet,borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,.08)',fill:true,tension:0.4,pointRadius:2,borderWidth:2,borderDash:[]}
+          {label:'Income', data:moIn, borderColor:'#34d399', backgroundColor:'rgba(52,211,153,.08)', fill:true, tension:0.4, pointRadius:2, borderWidth:2},
+          {label:'Net profit', data:moNet, borderColor:'#4f46e5', backgroundColor:'rgba(79,70,229,.08)', fill:true, tension:0.4, pointRadius:2, borderWidth:2},
+          {label:'Avg net', data:avgLine, borderColor:'#f97316', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
         ]
       },
       options:{
         responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: RM${ctx.raw.toLocaleString()}`}}},
         scales:{
           x:{grid:{display:false}, ticks:{font:{size:10}, maxRotation:45}},
           y:{ticks:{callback:v=>'RM'+(v>=1000?(v/1000).toFixed(0)+'k':v), font:{size:10}}, grid:{color:'rgba(0,0,0,.05)'}}
+        }
+      }
+    });
+  }
+
+  // ── MARGIN HISTOGRAM ──
+  const moMargin = moLabels.map((k,i)=> moIn[i]>0 ? Math.round((moNet[i]/moIn[i])*100) : 0);
+  const avgMargin = moMargin.length ? Math.round(moMargin.reduce((a,b)=>a+b,0)/moMargin.length) : 0;
+  const avgMarginLine = moLabels.map(()=>avgMargin);
+  const marginColors = moMargin.map(m=> m>=70?'#7c3aed': m>=50?'#a78bfa': m>=30?'#c4b5fd':'#e9d5ff');
+
+  const mCtx = document.getElementById('marginChart');
+  if(mCtx) {
+    if(mChart) mChart.destroy();
+    mChart = new Chart(mCtx, {
+      type:'bar',
+      data:{
+        labels: shortLabels,
+        datasets:[
+          {label:'Margin %', data:moMargin, backgroundColor:marginColors, borderRadius:4, barPercentage:0.7},
+          {label:'Avg margin', data:avgMarginLine, type:'line', borderColor:'#f97316', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw}%`}}},
+        scales:{
+          x:{grid:{display:false}, ticks:{font:{size:10}, maxRotation:45}},
+          y:{min:0, max:100, ticks:{callback:v=>v+'%', font:{size:10}}, grid:{color:'rgba(0,0,0,.05)'}}
         }
       }
     });
@@ -893,21 +940,56 @@ function openTxModal() {
   document.getElementById('tx-scheduled').value='';
   document.getElementById('tx-invoice').value='';
   document.getElementById('tx-notes').value='';
+  document.getElementById('expense-lines').innerHTML='';
+  document.getElementById('expense-section').style.display='none';
   updateTxCats();
-  document.getElementById('tx-type').onchange=updateTxCats;
   document.getElementById('txModal').classList.add('open');
 }
 function updateTxCats(){
   const t=document.getElementById('tx-type').value;
   document.getElementById('tx-cat').innerHTML=(t==='in'?CATS_IN:CATS_OUT).map(c=>`<option>${c}</option>`).join('');
+  toggleExpenseSection();
+}
+function toggleExpenseSection(){
+  const type=document.getElementById('tx-type').value;
+  const cat=document.getElementById('tx-cat').value;
+  const show = type==='in' && (cat==='Service fees'||cat==='Project payment'||cat==='Retainer'||cat==='Consultation');
+  document.getElementById('expense-section').style.display=show?'block':'none';
+}
+let expLineCount=0;
+function addExpenseLine(line){
+  const id='exp-'+Date.now()+'-'+(expLineCount++);
+  const div=document.createElement('div');
+  div.id=id;
+  div.style.cssText='display:grid;grid-template-columns:1fr 120px 36px;gap:8px;margin-bottom:8px;align-items:center';
+  div.innerHTML=`
+    <input type="text" placeholder="e.g. Pipe fittings, Labour, Transport..." value="${line?line.desc:''}" style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none">
+    <input type="number" placeholder="Amount (RM)" value="${line?line.amount:''}" min="0" step="0.01" style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none">
+    <button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;border-radius:6px">✕</button>`;
+  document.getElementById('expense-lines').appendChild(div);
+}
+function getExpenseLines(){
+  return [...document.querySelectorAll('#expense-lines > div')].map(row=>{
+    const inputs=row.querySelectorAll('input');
+    return {desc:inputs[0].value.trim(), amount:parseFloat(inputs[1].value)||0};
+  }).filter(l=>l.desc&&l.amount>0);
 }
 function closeTxModal(){document.getElementById('txModal').classList.remove('open');}
 async function saveTx(){
   const desc=document.getElementById('tx-desc').value.trim();
   const amount=parseFloat(document.getElementById('tx-amount').value);
   if(!desc||!amount||amount<=0) return alert('Please fill in description and amount.');
-  const row={type:document.getElementById('tx-type').value,date:document.getElementById('tx-date').value,description:desc,category:document.getElementById('tx-cat').value,amount,scheduled_date:document.getElementById('tx-scheduled').value||null,invoice_num:document.getElementById('tx-invoice').value||null,notes:document.getElementById('tx-notes').value||null};
+  const date=document.getElementById('tx-date').value;
+  const invoiceNum=document.getElementById('tx-invoice').value||null;
+  const row={type:document.getElementById('tx-type').value,date,description:desc,category:document.getElementById('tx-cat').value,amount,scheduled_date:document.getElementById('tx-scheduled').value||null,invoice_num:invoiceNum,notes:document.getElementById('tx-notes').value||null};
   await ins('transactions',row);
+  // Save linked expense lines
+  const expLines=getExpenseLines();
+  if(expLines.length){
+    for(const exp of expLines){
+      await ins('transactions',{type:'out',date,description:exp.desc+' (linked to: '+desc+')',category:'Materials',amount:exp.amount,scheduled_date:null,invoice_num:invoiceNum,notes:'Auto-linked expense'});
+    }
+  }
   closeTxModal();
   renderCashflow();
   renderDashboard();
