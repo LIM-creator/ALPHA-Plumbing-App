@@ -6,6 +6,7 @@
 <title>Alpha Plumbing & Electrical — Business System</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
@@ -318,6 +319,25 @@
         <div class="card">
           <div class="card-title">Recent transactions</div>
           <div class="table-wrap" id="dash-transactions"></div>
+        </div>
+        <div class="grid2" style="margin-top:18px">
+          <div class="card">
+            <div class="card-title">Quarterly overview</div>
+            <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#4f46e5;display:inline-block"></span>Income</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span>Expenses</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#34d399;display:inline-block"></span>Net</span>
+            </div>
+            <div style="position:relative;height:200px"><canvas id="quarterlyChart" role="img" aria-label="Quarterly income expenses net bar chart">Quarterly overview</canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Monthly net profit trend</div>
+            <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:3px;border-radius:2px;background:#4f46e5;display:inline-block"></span>Net profit</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:3px;border-radius:2px;background:#34d399;display:inline-block"></span>Income</span>
+            </div>
+            <div style="position:relative;height:200px"><canvas id="annualChart" role="img" aria-label="Monthly income and net profit line chart">Monthly trend</canvas></div>
+          </div>
         </div>
       </div>
 
@@ -725,9 +745,100 @@ async function renderDashboard() {
       <td><span class="badge badge-gray">${t.category||''}</span></td>
       <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace;color:${t.type==='in'?'var(--green)':'var(--red)'}">${t.type==='in'?'+':'-'}${fmt(t.amount)}</td>
     </tr>`).join('')}</tbody></table>` : '<div class="empty"><p>No transactions yet</p></div>';
+
+  renderDashboardCharts(txs);
 }
 
 // ── CASH FLOW ──────────────────────────────────────────────
+
+// ── DASHBOARD CHARTS ─────────────────────────────────────
+let qChart=null, aChart=null;
+
+function renderDashboardCharts(txs) {
+  // Filter out rows with no real date
+  const validTxs = txs.filter(t=>t.date&&t.date.length===10);
+
+  // ── QUARTERLY CHART ──
+  const quarters = {};
+  validTxs.forEach(t => {
+    const d = new Date(t.date);
+    const yr = d.getFullYear();
+    const q = Math.ceil((d.getMonth()+1)/3);
+    const key = `${yr} Q${q}`;
+    if(!quarters[key]) quarters[key]={in:0,out:0};
+    if(t.type==='in') quarters[key].in += parseFloat(t.amount||0);
+    else quarters[key].out += parseFloat(t.amount||0);
+  });
+  const qLabels = Object.keys(quarters).sort();
+  const qIn  = qLabels.map(k=>Math.round(quarters[k].in));
+  const qOut = qLabels.map(k=>Math.round(quarters[k].out));
+  const qNet = qLabels.map((k,i)=>Math.round(qIn[i]-qOut[i]));
+
+  const qCtx = document.getElementById('quarterlyChart');
+  if(qCtx) {
+    if(qChart) qChart.destroy();
+    qChart = new Chart(qCtx, {
+      type:'bar',
+      data:{
+        labels: qLabels,
+        datasets:[
+          {label:'Income', data:qIn,  backgroundColor:'#4f46e5', borderRadius:4, barPercentage:0.6},
+          {label:'Expenses',data:qOut,backgroundColor:'#f87171', borderRadius:4, barPercentage:0.6},
+          {label:'Net',     data:qNet, backgroundColor:'#34d399', borderRadius:4, barPercentage:0.6}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false}, ticks:{font:{size:10}}},
+          y:{ticks:{callback:v=>'RM'+(v>=1000?(v/1000).toFixed(0)+'k':v), font:{size:10}}, grid:{color:'rgba(0,0,0,.05)'}}
+        }
+      }
+    });
+  }
+
+  // ── ANNUAL LINE CHART ──
+  const monthly = {};
+  validTxs.forEach(t => {
+    const mo = t.date.slice(0,7);
+    if(!monthly[mo]) monthly[mo]={in:0,out:0};
+    if(t.type==='in') monthly[mo].in += parseFloat(t.amount||0);
+    else monthly[mo].out += parseFloat(t.amount||0);
+  });
+  const moLabels = Object.keys(monthly).sort();
+  const moNet = moLabels.map(k=>Math.round(monthly[k].in - monthly[k].out));
+  const moIn  = moLabels.map(k=>Math.round(monthly[k].in));
+  const shortLabels = moLabels.map(m=>{
+    const [yr,mo] = m.split('-');
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]+' '+yr.slice(2);
+  });
+
+  const aCtx = document.getElementById('annualChart');
+  if(aCtx) {
+    if(aChart) aChart.destroy();
+    aChart = new Chart(aCtx, {
+      type:'line',
+      data:{
+        labels: shortLabels,
+        datasets:[
+          {label:'Income', data:moIn,  borderColor:'#34d399', backgroundColor:'rgba(52,211,153,.08)', fill:true,  tension:0.4, pointRadius:2, borderWidth:2},
+          {label:'Net profit',data:moNet,borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,.08)',fill:true,tension:0.4,pointRadius:2,borderWidth:2,borderDash:[]}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false}, ticks:{font:{size:10}, maxRotation:45}},
+          y:{ticks:{callback:v=>'RM'+(v>=1000?(v/1000).toFixed(0)+'k':v), font:{size:10}}, grid:{color:'rgba(0,0,0,.05)'}}
+        }
+      }
+    });
+  }
+}
+
+
 const CATS_IN  = ['Service fees','Project payment','Retainer','Deposit received','Consultation','Other income'];
 const CATS_OUT = ['Salaries','Transport','Materials','Tools & equipment','Rent','Utilities','Marketing','Professional fees','Tax','Insurance','Other expense'];
 
