@@ -299,6 +299,11 @@
 
             <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
+        <div id="conn-status"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--text2)">Showing data for:</div>
+          <select id="dash-month" onchange="renderDashboard()" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none"></select>
+        </div>
         <div class="kpi-strip" id="dash-metrics"></div>
         <div class="dash-section">
           <div class="card">
@@ -560,6 +565,23 @@ const SUPABASE_URL = 'https://zzbystulzhhbpqomdjwj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6YnlzdHVsemhoYnBxb21kandqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NzI0ODIsImV4cCI6MjA5NDA0ODQ4Mn0.hw0C8kBIR5xL56HJhrItsF45oci0-QisKv_OIbMqaow';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// CONNECTION TEST
+async function testConnection() {
+  try {
+    const {data, error} = await sb.from('transactions').select('id').limit(1);
+    if(error) {
+      console.error('DB connection error:', error.message);
+      document.getElementById('conn-status').innerHTML =
+        '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#dc2626;margin-bottom:16px">⚠ Database connection issue: ' + error.message + '. Please run the RLS fix SQL in Supabase.</div>';
+    } else {
+      document.getElementById('conn-status').innerHTML = '';
+      console.log('DB connected OK, rows accessible:', data ? data.length : 0);
+    }
+  } catch(e) {
+    console.error('Connection failed:', e);
+  }
+}
+
 // HELPERS
 const fmt = n => 'RM ' + Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtNum = n => Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -632,11 +654,18 @@ function showPage(p) {
 
 // ── DASHBOARD ──────────────────────────────────────────────
 async function renderDashboard() {
-  const now = thisMonth();
   const [txs, invs] = await Promise.all([
     q('transactions',{order:'date',asc:false}),
     q('invoices',{order:'date',asc:false})
   ]);
+
+  // Populate month selector
+  const months=[...new Set(txs.map(t=>t.date&&t.date.slice(0,7)).filter(Boolean))].sort().reverse();
+  if(!months.includes(thisMonth())) months.unshift(thisMonth());
+  const dashMonSel = document.getElementById('dash-month');
+  const selectedMon = dashMonSel.value || thisMonth();
+  dashMonSel.innerHTML = months.map(m=>`<option value="${m}"${m===selectedMon?' selected':''}>${m}</option>`).join('');
+  const now = dashMonSel.value || thisMonth();
 
   const thisTx = txs.filter(t=>t.date&&t.date.startsWith(now));
   const totalIn  = thisTx.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
@@ -1312,6 +1341,7 @@ async function renderReports(){
 }
 
 // ── INIT ──────────────────────────────────────────────────
+testConnection();
 renderDashboard();
 </script>
 
