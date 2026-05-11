@@ -1171,11 +1171,7 @@ async function saveDoc(){
     job:document.getElementById('doc-job').value,
     lines,
     sst:document.getElementById('doc-sst').value,
-    notes:document.getElementById('doc-notes').value
-      +(document.getElementById('doc-duration').value?
-Project duration: '+document.getElementById('doc-duration').value:'')
-      +(document.getElementById('doc-start').value?'
-'+document.getElementById('doc-start').value:''),
+    notes:document.getElementById('doc-notes').value + (document.getElementById('doc-duration').value ? ' Project duration: ' + document.getElementById('doc-duration').value : '') + (document.getElementById('doc-start').value ? ' ' + document.getElementById('doc-start').value : ''),
     status:docMode==='invoice'?'unpaid':'draft',
     paid_deposit:0,paid_balance:0,
     pay_terms:document.getElementById('doc-payterms').value,
