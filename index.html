@@ -223,16 +223,107 @@
 
   /* ── MOBILE ── */
   @media (max-width: 768px) {
+    /* Hide desktop sidebar, show mobile nav */
     .sidebar { display: none; }
+    .mobile-nav { display: flex !important; }
+    .mobile-header { display: flex !important; }
+    .topbar { display: none; }
+    .main { padding-bottom: 72px; }
+
+    /* Layout */
+    .app { flex-direction: column; }
     .form-grid { grid-template-columns: 1fr; }
+    .form-grid.cols3 { grid-template-columns: 1fr; }
     .grid2, .grid3, .kpi-strip, .dash-section { grid-template-columns: 1fr; }
-    .content { padding: 16px; }
-    .item-line { grid-template-columns: 1fr 60px 80px 80px 30px; }
+    .content { padding: 14px; padding-top: 70px; }
+    .card { padding: 14px; }
+
+    /* Line items: stack on mobile */
+    .item-line { grid-template-columns: 1fr 70px 36px; }
+    .item-line-header { grid-template-columns: 1fr 70px 36px; }
+    .item-line input:nth-child(2) { display: none; }
+    .item-line-header span:nth-child(2) { display: none; }
+
+    /* Tables: horizontal scroll */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 500px; }
+
+    /* Modals: full screen on mobile */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal { max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 92vh; }
+    .modal-lg { max-width: 100%; }
+
+    /* KPI cards: 2 per row */
+    .kpi-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi { padding: 14px; }
+    .kpi-val { font-size: 18px; }
+    .kpi-icon { width: 32px; height: 32px; }
+
+    /* Charts: shorter on mobile */
+    .chart-area, canvas { max-height: 180px; }
+
+    /* Doc line items on mobile */
+    .item-line { grid-template-columns: 1fr 80px 30px; gap: 6px; padding: 8px; }
+    .item-line-header { grid-template-columns: 1fr 80px 30px; }
   }
 </style>
 
 </head>
 <body>
+
+<!-- MOBILE HEADER -->
+<div class="mobile-header" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:var(--text);align-items:center;padding:0 16px;gap:12px">
+  <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" alt="Alpha" style="height:28px;object-fit:contain;filter:brightness(0) invert(1);opacity:.9">
+  <div id="mobile-page-title" style="flex:1;font-size:15px;font-weight:700;color:#fff;margin-left:4px">Dashboard</div>
+  <button onclick="openMobileMenu()" aria-label="Open menu" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+</div>
+
+<!-- MOBILE SLIDE-IN MENU -->
+<div id="mobile-menu-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5)" onclick="closeMobileMenu()"></div>
+<div id="mobile-menu" style="display:none;position:fixed;top:0;left:0;bottom:0;width:260px;z-index:400;background:var(--text);padding:24px 12px;overflow-y:auto;transform:translateX(-100%);transition:transform .25s ease">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 8px;margin-bottom:20px">
+    <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" alt="Alpha" style="height:30px;filter:brightness(0) invert(1);opacity:.9">
+    <button onclick="closeMobileMenu()" aria-label="Close menu" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer">✕</button>
+  </div>
+  <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:0 8px;margin-bottom:6px">Finance</div>
+  <button class="mob-nav-btn" onclick="mobileNav('dashboard')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</button>
+  <button class="mob-nav-btn" onclick="mobileNav('cashflow')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Cash Flow</button>
+  <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:8px 8px 6px;margin-top:8px">Documents</div>
+  <button class="mob-nav-btn" onclick="mobileNav('quotations')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Quotations</button>
+  <button class="mob-nav-btn" onclick="mobileNav('invoices')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>Invoices</button>
+  <button class="mob-nav-btn" onclick="mobileNav('receipts')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Receipts</button>
+  <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:8px 8px 6px;margin-top:8px">Clients & Jobs</div>
+  <button class="mob-nav-btn" onclick="mobileNav('clients')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Clients</button>
+  <button class="mob-nav-btn" onclick="mobileNav('jobs')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>Jobs</button>
+  <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:8px 8px 6px;margin-top:8px">Team & Reports</div>
+  <button class="mob-nav-btn" onclick="mobileNav('staff')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>Staff</button>
+  <button class="mob-nav-btn" onclick="mobileNav('reports')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Reports</button>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;height:64px;background:var(--surface);border-top:1px solid var(--border);padding:0 4px;align-items:center;justify-content:space-around">
+  <button class="mob-bottom-btn active" id="bn-dashboard" onclick="mobileNav('dashboard')">
+    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="mob-bottom-btn" id="bn-invoices" onclick="mobileNav('invoices')">
+    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    <span>Invoices</span>
+  </button>
+  <button class="mob-bottom-btn" id="bn-add" onclick="handleMobileAdd()" style="background:var(--blue);border-color:var(--blue);border-radius:50%;width:52px;height:52px;margin-top:-14px;flex-direction:column">
+    <svg width="24" height="24" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+  </button>
+  <button class="mob-bottom-btn" id="bn-clients" onclick="mobileNav('clients')">
+    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <span>Clients</span>
+  </button>
+  <button class="mob-bottom-btn" id="bn-reports" onclick="mobileNav('reports')">
+    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <span>Reports</span>
+  </button>
+</nav>
 
 <div class="app">
   <!-- SIDEBAR -->
@@ -535,19 +626,59 @@
     <div class="modal-header"><div class="modal-title" id="doc-modal-title">New Quotation</div><button class="modal-close" onclick="closeDocModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid" style="margin-bottom:16px">
-        <div class="form-group"><label for="doc-client">Client</label><select id="doc-client"><option value="">Select client...</option></select></div>
+
+        <div class="form-group">
+          <label for="doc-client">Client <span style="font-size:11px;color:var(--text3);font-weight:400">(optional)</span></label>
+          <select id="doc-client"><option value="">Walk-in / no client selected</option></select>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">You can save without selecting a client</div>
+        </div>
         <div class="form-group"><label for="doc-date">Date</label><input type="date" id="doc-date"></div>
+
         <div class="form-group form-full"><label for="doc-job">Project description</label><input type="text" id="doc-job" placeholder="e.g. Plumbing works — pipe replacement & waterproofing"></div>
-        <div class="form-group"><label for="doc-due">Valid until / Due date</label><input type="date" id="doc-due"></div>
+
+        <div class="form-group">
+          <label for="doc-due">Valid until <span style="font-size:11px;color:var(--text3);font-weight:400">(auto: +7 days)</span></label>
+          <input type="date" id="doc-due">
+        </div>
         <div class="form-group"><label for="doc-sst">SST (6%)</label><select id="doc-sst"><option value="no">No SST</option><option value="yes">Apply SST 6%</option></select></div>
-        <div class="form-group"><label for="doc-duration">Project duration</label><input type="text" id="doc-duration" placeholder="e.g. All work within 1-3 days"></div>
-        <div class="form-group"><label for="doc-start">Start date / availability</label><input type="text" id="doc-start" placeholder="e.g. Can start on 17th Apr 2026"></div>
+
+        <div class="form-group">
+          <label for="doc-duration">Project duration</label>
+          <select id="doc-duration" onchange="toggleCustomDuration(this.value)">
+            <option value="1day">All work within 1 working day</option>
+            <option value="1-2days">All work within 1–2 working days</option>
+            <option value="1-3days">All work within 1–3 working days</option>
+            <option value="3-5days">All work within 3–5 working days</option>
+            <option value="1week">All work within 1 week</option>
+            <option value="1-2weeks">All work within 1–2 weeks</option>
+            <option value="2-4weeks">All work within 2–4 weeks</option>
+            <option value="1-3months">All work within 1–3 months</option>
+            <option value="custom">Custom — specify below</option>
+          </select>
+          <input type="text" id="doc-duration-custom" placeholder="Describe project duration..." style="margin-top:6px;display:none">
+        </div>
+
+        <div class="form-group">
+          <label for="doc-start">Can start on</label>
+          <input type="date" id="doc-start">
+          <div style="font-size:11px;color:var(--text3);margin-top:3px" id="doc-start-preview"></div>
+        </div>
+
         <div class="form-group form-full"><label for="doc-payterms">Payment terms</label><select id="doc-payterms">
           <option value="50/50">50% deposit + 50% on completion (standard)</option>
           <option value="50/30/20">50% deposit + 30% on milestone + 20% on completion</option>
           <option value="100">Full payment on completion</option>
           <option value="custom">Custom (specify in notes)</option>
         </select></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Service type</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="doc-service-type">
+        <button class="btn btn-sm service-type-btn active" data-type="Plumbing" onclick="setServiceType('Plumbing',this)" style="background:var(--blue-light);color:var(--blue);border-color:var(--blue)">Plumbing</button>
+        <button class="btn btn-sm service-type-btn" data-type="Electrical" onclick="setServiceType('Electrical',this)">Electrical</button>
+        <button class="btn btn-sm service-type-btn" data-type="Renovation" onclick="setServiceType('Renovation',this)">Renovation</button>
+        <button class="btn btn-sm service-type-btn" data-type="Other" onclick="setServiceType('Other',this)">Other</button>
+        <input type="text" id="doc-service-other" placeholder="Specify service type..." style="display:none;flex:1;min-width:140px;padding:5px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px">
       </div>
 
       <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Line items</div>
@@ -557,8 +688,8 @@
       </div>
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="addDocLine()">+ Add line item</button>
-        <button class="btn btn-sm" onclick="addDocLine({section:'A) Preliminaries',desc:'General preliminaries including site visit.',qty:'1',valtype:'waived'})">+ Prelim (waived)</button>
-        <button class="btn btn-sm" onclick="addDocLine({section:'',desc:'',qty:'1',valtype:'discount'})">+ Discount line</button>
+        <button class="btn btn-sm" onclick="addDocLine({section:'A) Preliminaries',desc:'General preliminaries including site visit.',valtype:'waived'})">+ Prelim</button>
+        <button class="btn btn-sm" onclick="addDocLine({section:'',desc:'',valtype:'discount'})">+ Discount</button>
       </div>
 
       <div style="text-align:right;font-size:13px;color:var(--text2);line-height:2;background:var(--surface2);padding:12px 16px;border-radius:10px;margin-bottom:12px">
@@ -749,6 +880,9 @@ function showPage(p) {
   });
   document.getElementById('page-title').textContent = pageTitles[p]||p;
   document.getElementById('topbar-actions').innerHTML = topbarBtns[p]||'';
+  // Sync mobile header
+  const mobileTitle = document.getElementById('mobile-page-title');
+  if(mobileTitle) mobileTitle.textContent = pageTitles[p]||p;
   const renders = {dashboard:renderDashboard,cashflow:renderCashflow,quotations:renderQuotations,invoices:renderInvoices,receipts:renderReceipts,clients:renderClients,jobs:renderJobs,staff:renderStaff,reports:renderReports};
   if(renders[p]) renders[p]();
 }
@@ -1243,27 +1377,112 @@ async function delTarget(id){if(!confirm('Remove this target?'))return;await del
 let docMode='quotation';
 let docLineCount=0;
 
+// Duration display map
+const DURATION_MAP = {
+  '1day':'All work within 1 working day',
+  '1-2days':'All work within 1–2 working days',
+  '1-3days':'All work within 1–3 working days',
+  '3-5days':'All work within 3–5 working days',
+  '1week':'All work within 1 week',
+  '1-2weeks':'All work within 1–2 weeks',
+  '2-4weeks':'All work within 2–4 weeks',
+  '1-3months':'All work within 1–3 months',
+  'custom':'custom'
+};
+
+function toggleCustomDuration(val) {
+  const custom = document.getElementById('doc-duration-custom');
+  if(custom) custom.style.display = val==='custom' ? 'block' : 'none';
+}
+
+function setServiceType(type, btn) {
+  document.querySelectorAll('.service-type-btn').forEach(b=>{
+    b.style.background=''; b.style.color=''; b.style.borderColor='';
+    b.classList.remove('active');
+  });
+  btn.style.background='var(--blue-light)'; btn.style.color='var(--blue)'; btn.style.borderColor='var(--blue)';
+  btn.classList.add('active');
+  const otherInput = document.getElementById('doc-service-other');
+  if(otherInput) otherInput.style.display = type==='Other' ? 'block' : 'none';
+  // Update section header in existing lines that have B) work section
+  document.querySelectorAll('#doc-lines .item-line').forEach(row=>{
+    const secInput = row.querySelectorAll('input')[0];
+    if(secInput && secInput.value && secInput.value.match(/^B\).*Work$/)) {
+      const realType = type==='Other' ? (document.getElementById('doc-service-other')?.value||'Other') : type;
+      secInput.value = 'B) '+realType+' Work';
+    }
+  });
+}
+
+function getDocServiceType() {
+  const active = document.querySelector('.service-type-btn.active');
+  if(!active) return 'Plumbing';
+  if(active.dataset.type==='Other') return document.getElementById('doc-service-other')?.value||'Other';
+  return active.dataset.type;
+}
+
+function getDurationText() {
+  const sel = document.getElementById('doc-duration')?.value;
+  if(sel==='custom') return document.getElementById('doc-duration-custom')?.value||'';
+  return DURATION_MAP[sel]||sel||'';
+}
+
+function updateStartPreview(dateVal) {
+  const el = document.getElementById('doc-start-preview');
+  if(!el||!dateVal) return;
+  const d = new Date(dateVal);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  el.textContent = `Can start on ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 async function openDocModal(mode, existingId) {
   docMode=mode;
-  document.getElementById('doc-modal-title').textContent=existingId?`Edit ${mode}`:`New ${mode==='quotation'?'Quotation':'Invoice'}`;
+  document.getElementById('doc-modal-title').textContent=existingId?`Edit ${mode==='quotation'?'Quotation':'Invoice'}`:`New ${mode==='quotation'?'Quotation':'Invoice'}`;
   document.getElementById('doc-save-btn').textContent=`Save ${mode==='quotation'?'Quotation':'Invoice'}`;
-  document.getElementById('doc-date').value=todate();
-  document.getElementById('doc-due').value='';
+
+  // Set today's date
+  const today = todate();
+  document.getElementById('doc-date').value=today;
+
+  // Auto set valid until = 7 days from today
+  const due = new Date(today);
+  due.setDate(due.getDate()+7);
+  document.getElementById('doc-due').value=due.toISOString().slice(0,10);
+
+  // Default start date = tomorrow
+  const start = new Date(today);
+  start.setDate(start.getDate()+1);
+  const startStr = start.toISOString().slice(0,10);
+  document.getElementById('doc-start').value=startStr;
+  updateStartPreview(startStr);
+  document.getElementById('doc-start').onchange=e=>updateStartPreview(e.target.value);
+
+  // Default duration
+  document.getElementById('doc-duration').value='1-3days';
+  toggleCustomDuration('1-3days');
+
   document.getElementById('doc-job').value='';
   document.getElementById('doc-sst').value='no';
   document.getElementById('doc-notes').value=mode==='invoice'?'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.':'Valid for 7 days. 50% deposit required to confirm job.';
   document.getElementById('doc-lines').innerHTML='';
+  document.getElementById('doc-service-other').style.display='none';
   docLineCount=0;
 
+  // Reset service type to Plumbing
+  document.querySelectorAll('.service-type-btn').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';b.classList.remove('active');});
+  const plumbBtn=document.querySelector('.service-type-btn[data-type="Plumbing"]');
+  if(plumbBtn){plumbBtn.style.background='var(--blue-light)';plumbBtn.style.color='var(--blue)';plumbBtn.style.borderColor='var(--blue)';plumbBtn.classList.add('active');}
+
+  // Load clients (optional)
   const clients=await q('clients',{order:'name'});
-  document.getElementById('doc-client').innerHTML='<option value="">Select client...</option>'+clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('doc-client').innerHTML='<option value="">Walk-in / no client selected</option>'+clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 
   if(existingId){
     const col=mode==='quotation'?'quotations':'invoices';
     const docs=await q(col,{eq:{id:existingId}});
     if(docs.length){
       const d=docs[0];
-      document.getElementById('doc-client').value=d.client_id;
+      document.getElementById('doc-client').value=d.client_id||'';
       document.getElementById('doc-date').value=d.date;
       document.getElementById('doc-due').value=d.due_date||'';
       document.getElementById('doc-job').value=d.job||'';
@@ -1272,7 +1491,9 @@ async function openDocModal(mode, existingId) {
       (d.lines||[]).forEach(l=>addDocLine(l));
     }
   } else {
-    addDocLine();
+    // Auto-add prelim as first line
+    addDocLine({section:'A) Preliminaries',desc:'General preliminaries including site visit.',valtype:'waived'});
+    addDocLine({section:'B) '+getDocServiceType()+' Work',desc:'',valtype:'amount'});
   }
   updateDocTotal();
   document.getElementById('doc-sst').onchange=updateDocTotal;
@@ -1333,9 +1554,8 @@ function updateDocTotal(){
 }
 
 async function saveDoc(){
-  const clientId=parseInt(document.getElementById('doc-client').value);
+  const clientId=parseInt(document.getElementById('doc-client').value)||null;
   const lines=getDocLines();
-  if(!clientId) return alert('Please select a client.');
   if(!lines.length) return alert('Please add at least one line item.');
   const col=docMode==='quotation'?'quotations':'invoices';
 
@@ -1361,12 +1581,13 @@ async function saveDoc(){
     job:document.getElementById('doc-job').value,
     lines,
     sst:document.getElementById('doc-sst').value,
-    notes:document.getElementById('doc-notes').value + (document.getElementById('doc-duration').value ? ' Project duration: ' + document.getElementById('doc-duration').value : '') + (document.getElementById('doc-start').value ? ' ' + document.getElementById('doc-start').value : ''),
+    notes:document.getElementById('doc-notes').value,
     status:docMode==='invoice'?'unpaid':'draft',
     paid_deposit:0,paid_balance:0,
     pay_terms:document.getElementById('doc-payterms').value,
-    duration:document.getElementById('doc-duration').value,
-    start_info:document.getElementById('doc-start').value
+    service_type:getDocServiceType(),
+    duration:getDurationText(),
+    start_info:(()=>{const d=document.getElementById('doc-start').value;if(!d)return '';const dt=new Date(d);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `Can start on ${dt.getDate()} ${mo[dt.getMonth()]} ${dt.getFullYear()}`;})()
   };
   const saved=await ins(col,row);
   if(saved){closeDocModal();docMode==='quotation'?renderQuotations():renderInvoices();}
@@ -1563,7 +1784,7 @@ async function previewDoc(type,id){
         <th style="text-align:right;background:#f0eff5;padding:10px;font-size:12px;color:#5e5c78;width:130px">Amount (MYR)</th>
       </tr></thead>
       <tbody>
-        <tr><td colspan="3" style="padding:10px;font-weight:700;font-size:13px;background:#eeedf5;letter-spacing:.03em">PLUMBING SERVICES</td></tr>
+        <tr><td colspan="3" style="padding:10px;font-weight:700;font-size:13px;background:#eeedf5;letter-spacing:.03em">${(doc.service_type||'PLUMBING').toUpperCase()} SERVICES</td></tr>
         ${doc.job?`<tr><td colspan="3" style="padding:6px 10px;font-size:12px;color:#5e5c78"><strong>Project:</strong> ${escHtml(doc.job)}</td></tr>`:''}
         ${lineRows}
         ${discTotal>0?`<tr><td colspan="2" style="text-align:right;padding:8px 10px;font-size:12px;color:#dc2626;font-style:italic">Discount</td><td style="text-align:right;padding:8px 10px;color:#dc2626">-${fmtNum(discTotal)}</td></tr>`:''}
@@ -1578,7 +1799,7 @@ async function previewDoc(type,id){
       </table>
     </div>
 
-    ${doc.duration||doc.start_info?`<p style="font-size:11px;color:#5e5c78;font-style:italic;margin-bottom:4px">${doc.duration?'All prices will include necessary material, petrol &amp; manpower.<br>':''} ${doc.duration?'Project Duration: '+escHtml(doc.duration)+'.':''} ${doc.start_info?'('+escHtml(doc.start_info)+')':''}</p>`:''}
+    ${(doc.duration||doc.start_info)?`<p style="font-size:11px;color:#5e5c78;font-style:italic;margin-bottom:4px">All prices will include necessary material, petrol &amp; manpower.${doc.duration?'<br>Project Duration: '+escHtml(doc.duration)+'.':''}${doc.start_info?' ('+escHtml(doc.start_info)+')':''}</p>`:''}
 
     <div class="doc-footer">
       <div style="margin-bottom:8px;font-size:11px;font-style:italic">
@@ -1825,6 +2046,60 @@ async function renderReports(){
     <tr><td>Total expenses</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--red)">${fmt(totalOut)}</td></tr>
     <tr style="font-size:16px;font-weight:700;border-top:2px solid var(--border2)"><td>Net profit / (loss)</td><td style="text-align:right;font-family:'DM Mono',monospace;color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</td></tr>
   </tbody></table>`;
+}
+
+// ── MOBILE NAV ────────────────────────────────────────────
+function isMobile(){ return window.innerWidth <= 768; }
+
+function mobileNav(page) {
+  closeMobileMenu();
+  showPage(page);
+  // Update mobile header title
+  const titles = {dashboard:'Dashboard',cashflow:'Cash Flow',quotations:'Quotations',invoices:'Invoices',receipts:'Receipts',clients:'Clients',jobs:'Jobs',staff:'Staff',reports:'Reports'};
+  const el = document.getElementById('mobile-page-title');
+  if(el) el.textContent = titles[page]||page;
+  // Update bottom nav active state
+  const bottomPages = ['dashboard','invoices','clients','reports'];
+  bottomPages.forEach(p=>{
+    const btn = document.getElementById('bn-'+p);
+    if(btn) btn.classList.toggle('active', p===page);
+  });
+  // Update slide menu active state
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+page+"'"));
+  });
+}
+
+function openMobileMenu() {
+  const overlay = document.getElementById('mobile-menu-overlay');
+  const menu = document.getElementById('mobile-menu');
+  if(overlay) { overlay.style.display='block'; }
+  if(menu) { menu.style.display='block'; requestAnimationFrame(()=>menu.style.transform='translateX(0)'); }
+}
+
+function closeMobileMenu() {
+  const overlay = document.getElementById('mobile-menu-overlay');
+  const menu = document.getElementById('mobile-menu');
+  if(menu) { menu.style.transform='translateX(-100%)'; setTimeout(()=>{ menu.style.display='none'; },250); }
+  if(overlay) overlay.style.display='none';
+}
+
+function handleMobileAdd() {
+  // Smart add: context-aware based on current page
+  const currentPage = document.querySelector('.page.active')?.id?.replace('page-','');
+  const actions = {
+    dashboard: ()=>openTxModal(),
+    cashflow: ()=>openTxModal(),
+    invoices: ()=>openDocModal('invoice'),
+    quotations: ()=>openDocModal('quotation'),
+    clients: ()=>openClientModal(),
+    jobs: ()=>openJobModal(),
+    staff: ()=>openStaffModal(),
+    receipts: ()=>alert('Receipts are auto-generated when you record payment on an invoice.'),
+    reports: ()=>openTxModal(),
+  };
+  const action = actions[currentPage] || actions.dashboard;
+  action();
 }
 
 // ── INIT ──────────────────────────────────────────────────
