@@ -304,7 +304,7 @@
         <div id="conn-status"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div style="font-size:13px;color:var(--text2)">Showing data for:</div>
-          <select id="dash-month" onchange="renderDashboard()" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none"></select>
+          <select id="dash-month" aria-label="Select dashboard month" onchange="renderDashboard()" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none"></select>
         </div>
         <div class="kpi-strip" id="dash-metrics"></div>
         <div class="grid2" style="margin-bottom:18px">
@@ -360,9 +360,9 @@
             <button class="btn btn-primary btn-sm" onclick="openTxModal()">+ Add Transaction</button>
           </div>
           <div class="filter-bar">
-            <select id="cf-type" onchange="renderCashflow()"><option value="">All types</option><option value="in">Money In</option><option value="out">Money Out</option></select>
-            <select id="cf-month" onchange="renderCashflow()"></select>
-            <input type="text" id="cf-search" placeholder="Search..." oninput="renderCashflow()">
+            <select id="cf-type" aria-label="Filter by type" onchange="renderCashflow()"><option value="">All types</option><option value="in">Money In</option><option value="out">Money Out</option></select>
+            <select id="cf-month" aria-label="Filter by month" onchange="renderCashflow()"></select>
+            <input type="text" id="cf-search" aria-label="Search transactions" placeholder="Search..." oninput="renderCashflow()">
           </div>
           <div class="table-wrap" id="cf-table"></div>
         </div>
@@ -416,7 +416,7 @@
       <!-- REPORTS -->
       <div class="page" id="page-reports">
         <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-          <select id="r-month" onchange="renderReports()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--surface)"></select>
+          <select id="r-month" aria-label="Select report month" onchange="renderReports()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--surface)"></select>
         </div>
         <div class="metrics" id="r-metrics"></div>
         <div class="grid2">
@@ -440,14 +440,14 @@
     <div class="modal-header"><div class="modal-title" id="tx-modal-title">Add Transaction</div><button class="modal-close" onclick="closeTxModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label>Type</label><select id="tx-type" onchange="updateTxCats()"><option value="in">Money In (Income)</option><option value="out">Money Out (Expense)</option></select></div>
-        <div class="form-group"><label>Date</label><input type="date" id="tx-date"></div>
-        <div class="form-group form-full"><label>Description</label><input type="text" id="tx-desc" placeholder="e.g. Client payment — Pipe repair at Wangsa Maju"></div>
-        <div class="form-group"><label>Category</label><select id="tx-cat" onchange="toggleExpenseSection()"></select></div>
-        <div class="form-group"><label>Amount (RM)</label><input type="number" id="tx-amount" placeholder="0.00" min="0" step="0.01"></div>
-        <div class="form-group"><label>Scheduled date (future payment)</label><input type="date" id="tx-scheduled"></div>
-        <div class="form-group"><label>Linked invoice #</label><input type="text" id="tx-invoice" placeholder="INV-0001 (optional)"></div>
-        <div class="form-group form-full"><label>Notes</label><textarea id="tx-notes" placeholder="Any additional details..."></textarea></div>
+        <div class="form-group"><label for="tx-type">Type</label><select id="tx-type" onchange="updateTxCats()"><option value="in">Money In (Income)</option><option value="out">Money Out (Expense)</option></select></div>
+        <div class="form-group"><label for="tx-date">Date</label><input type="date" id="tx-date"></div>
+        <div class="form-group form-full"><label for="tx-desc">Description</label><input type="text" id="tx-desc" placeholder="e.g. Client payment — Pipe repair at Wangsa Maju"></div>
+        <div class="form-group"><label for="tx-cat">Category</label><select id="tx-cat" onchange="toggleExpenseSection()"></select></div>
+        <div class="form-group"><label for="tx-amount">Amount (RM)</label><input type="number" id="tx-amount" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label for="tx-scheduled">Scheduled date (future payment)</label><input type="date" id="tx-scheduled"></div>
+        <div class="form-group"><label for="tx-invoice">Linked invoice #</label><input type="text" id="tx-invoice" placeholder="INV-0001 (optional)"></div>
+        <div class="form-group form-full"><label for="tx-notes">Notes</label><textarea id="tx-notes" placeholder="Any additional details..."></textarea></div>
       </div>
       <div id="expense-section" style="display:none;margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1.5px solid var(--border)">
         <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Related job expenses (optional)</div>
@@ -470,9 +470,9 @@
     <div class="modal-header"><div class="modal-title">Set Monthly Target</div><button class="modal-close" onclick="document.getElementById('targetModal').classList.remove('open')">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group form-full"><label>Label</label><input type="text" id="tgt-label" placeholder="e.g. Monthly revenue, Operating expenses..."></div>
-        <div class="form-group"><label>Type</label><select id="tgt-type"><option value="in">Income target</option><option value="out">Expense limit</option></select></div>
-        <div class="form-group"><label>Target amount (RM)</label><input type="number" id="tgt-amount" placeholder="0.00"></div>
+        <div class="form-group form-full"><label for="tgt-label">Label</label><input type="text" id="tgt-label" placeholder="e.g. Monthly revenue, Operating expenses..."></div>
+        <div class="form-group"><label for="tgt-type">Type</label><select id="tgt-type"><option value="in">Income target</option><option value="out">Expense limit</option></select></div>
+        <div class="form-group"><label for="tgt-amount">Target amount (RM)</label><input type="number" id="tgt-amount" placeholder="0.00"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -488,14 +488,14 @@
     <div class="modal-header"><div class="modal-title" id="doc-modal-title">New Quotation</div><button class="modal-close" onclick="closeDocModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid" style="margin-bottom:16px">
-        <div class="form-group"><label>Client</label><select id="doc-client"><option value="">Select client...</option></select></div>
-        <div class="form-group"><label>Date</label><input type="date" id="doc-date"></div>
-        <div class="form-group form-full"><label>Project description</label><input type="text" id="doc-job" placeholder="e.g. Plumbing works — pipe replacement & waterproofing"></div>
-        <div class="form-group"><label>Valid until / Due date</label><input type="date" id="doc-due"></div>
-        <div class="form-group"><label>SST (6%)</label><select id="doc-sst"><option value="no">No SST</option><option value="yes">Apply SST 6%</option></select></div>
-        <div class="form-group"><label>Project duration</label><input type="text" id="doc-duration" placeholder="e.g. All work within 1-3 days"></div>
-        <div class="form-group"><label>Start date / availability</label><input type="text" id="doc-start" placeholder="e.g. Can start on 17th Apr 2026"></div>
-        <div class="form-group form-full"><label>Payment terms</label><select id="doc-payterms">
+        <div class="form-group"><label for="doc-client">Client</label><select id="doc-client"><option value="">Select client...</option></select></div>
+        <div class="form-group"><label for="doc-date">Date</label><input type="date" id="doc-date"></div>
+        <div class="form-group form-full"><label for="doc-job">Project description</label><input type="text" id="doc-job" placeholder="e.g. Plumbing works — pipe replacement & waterproofing"></div>
+        <div class="form-group"><label for="doc-due">Valid until / Due date</label><input type="date" id="doc-due"></div>
+        <div class="form-group"><label for="doc-sst">SST (6%)</label><select id="doc-sst"><option value="no">No SST</option><option value="yes">Apply SST 6%</option></select></div>
+        <div class="form-group"><label for="doc-duration">Project duration</label><input type="text" id="doc-duration" placeholder="e.g. All work within 1-3 days"></div>
+        <div class="form-group"><label for="doc-start">Start date / availability</label><input type="text" id="doc-start" placeholder="e.g. Can start on 17th Apr 2026"></div>
+        <div class="form-group form-full"><label for="doc-payterms">Payment terms</label><select id="doc-payterms">
           <option value="50/50">50% deposit + 50% on completion (standard)</option>
           <option value="50/30/20">50% deposit + 30% on milestone + 20% on completion</option>
           <option value="100">Full payment on completion</option>
@@ -522,7 +522,7 @@
       </div>
 
       <div class="form-grid">
-        <div class="form-group form-full"><label>Notes / terms</label><textarea id="doc-notes" rows="3"></textarea></div>
+        <div class="form-group form-full"><label for="doc-notes">Notes / terms</label><textarea id="doc-notes" rows="3"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -552,11 +552,11 @@
     <div class="modal-header"><div class="modal-title" id="client-modal-title">Add Client</div><button class="modal-close" onclick="document.getElementById('clientModal').classList.remove('open')">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group form-full"><label>Full name / company</label><input type="text" id="cl-name" placeholder="e.g. Ahmad bin Razak / Syarikat ABC Sdn Bhd"></div>
-        <div class="form-group"><label>Phone</label><input type="text" id="cl-phone" placeholder="+60 12-345 6789"></div>
-        <div class="form-group"><label>Email</label><input type="email" id="cl-email" placeholder="client@email.com"></div>
-        <div class="form-group form-full"><label>Address</label><textarea id="cl-addr" placeholder="Unit / street / area, KL"></textarea></div>
-        <div class="form-group form-full"><label>Notes</label><textarea id="cl-notes" placeholder="Any notes about this client..."></textarea></div>
+        <div class="form-group form-full"><label for="cl-name">Full name / company</label><input type="text" id="cl-name" placeholder="e.g. Ahmad bin Razak / Syarikat ABC Sdn Bhd"></div>
+        <div class="form-group"><label for="cl-phone">Phone</label><input type="text" id="cl-phone" placeholder="+60 12-345 6789"></div>
+        <div class="form-group"><label for="cl-email">Email</label><input type="email" id="cl-email" placeholder="client@email.com"></div>
+        <div class="form-group form-full"><label for="cl-addr">Address</label><textarea id="cl-addr" placeholder="Unit / street / area, KL"></textarea></div>
+        <div class="form-group form-full"><label for="cl-notes">Notes</label><textarea id="cl-notes" placeholder="Any notes about this client..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -572,15 +572,15 @@
     <div class="modal-header"><div class="modal-title" id="job-modal-title">Add Job</div><button class="modal-close" onclick="document.getElementById('jobModal').classList.remove('open')">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group form-full"><label>Job title</label><input type="text" id="jb-title" placeholder="e.g. Pipe repair — Setapak"></div>
-        <div class="form-group"><label>Client</label><select id="jb-client"><option value="">Select...</option></select></div>
-        <div class="form-group"><label>Status</label><select id="jb-status"><option value="pending">Pending</option><option value="active">Active</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
-        <div class="form-group"><label>Start date</label><input type="date" id="jb-start"></div>
-        <div class="form-group"><label>End date</label><input type="date" id="jb-end"></div>
-        <div class="form-group"><label>Job value (RM)</label><input type="number" id="jb-value" placeholder="0.00"></div>
-        <div class="form-group"><label>Assigned staff</label><select id="jb-staff" multiple style="height:80px"><option value="">None</option></select></div>
-        <div class="form-group"><label>Linked invoice #</label><input type="text" id="jb-invoice" placeholder="INV-0001 (optional)"></div>
-        <div class="form-group form-full"><label>Notes</label><textarea id="jb-notes"></textarea></div>
+        <div class="form-group form-full"><label for="jb-title">Job title</label><input type="text" id="jb-title" placeholder="e.g. Pipe repair — Setapak"></div>
+        <div class="form-group"><label for="jb-client">Client</label><select id="jb-client"><option value="">Select...</option></select></div>
+        <div class="form-group"><label for="jb-status">Status</label><select id="jb-status"><option value="pending">Pending</option><option value="active">Active</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
+        <div class="form-group"><label for="jb-start">Start date</label><input type="date" id="jb-start"></div>
+        <div class="form-group"><label for="jb-end">End date</label><input type="date" id="jb-end"></div>
+        <div class="form-group"><label for="jb-value">Job value (RM)</label><input type="number" id="jb-value" placeholder="0.00"></div>
+        <div class="form-group"><label for="jb-staff">Assigned staff</label><select id="jb-staff" multiple style="height:80px"><option value="">None</option></select></div>
+        <div class="form-group"><label for="jb-invoice">Linked invoice #</label><input type="text" id="jb-invoice" placeholder="INV-0001 (optional)"></div>
+        <div class="form-group form-full"><label for="jb-notes">Notes</label><textarea id="jb-notes"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -596,14 +596,14 @@
     <div class="modal-header"><div class="modal-title" id="staff-modal-title">Add Staff</div><button class="modal-close" onclick="document.getElementById('staffModal').classList.remove('open')">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group form-full"><label>Full name</label><input type="text" id="sf-name"></div>
-        <div class="form-group"><label>Role</label><select id="sf-role"><option>Plumber</option><option>Electrician</option><option>Renovation</option><option>Supervisor</option><option>Admin</option><option>Other</option></select></div>
-        <div class="form-group"><label>Employment type</label><select id="sf-type"><option value="fulltime">Full-time</option><option value="parttime">Part-time</option><option value="contract">Contract</option></select></div>
-        <div class="form-group"><label>Phone</label><input type="text" id="sf-phone"></div>
-        <div class="form-group"><label>IC / Staff ID</label><input type="text" id="sf-ic"></div>
-        <div class="form-group"><label>Salary (RM/month)</label><input type="number" id="sf-salary"></div>
-        <div class="form-group"><label>Start date</label><input type="date" id="sf-start"></div>
-        <div class="form-group form-full"><label>Notes</label><textarea id="sf-notes"></textarea></div>
+        <div class="form-group form-full"><label for="sf-name">Full name</label><input type="text" id="sf-name"></div>
+        <div class="form-group"><label for="sf-role">Role</label><select id="sf-role"><option>Plumber</option><option>Electrician</option><option>Renovation</option><option>Supervisor</option><option>Admin</option><option>Other</option></select></div>
+        <div class="form-group"><label for="sf-type">Employment type</label><select id="sf-type"><option value="fulltime">Full-time</option><option value="parttime">Part-time</option><option value="contract">Contract</option></select></div>
+        <div class="form-group"><label for="sf-phone">Phone</label><input type="text" id="sf-phone"></div>
+        <div class="form-group"><label for="sf-ic">IC / Staff ID</label><input type="text" id="sf-ic"></div>
+        <div class="form-group"><label for="sf-salary">Salary (RM/month)</label><input type="number" id="sf-salary"></div>
+        <div class="form-group"><label for="sf-start">Start date</label><input type="date" id="sf-start"></div>
+        <div class="form-group form-full"><label for="sf-notes">Notes</label><textarea id="sf-notes"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
