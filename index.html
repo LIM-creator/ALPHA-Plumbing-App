@@ -531,887 +531,745 @@
 </div>
 
 <script>
-// ============================================================
-// SUPABASE CONFIG — replace with your keys after setup
-// ============================================================
+// CONFIG
 const SUPABASE_URL = 'https://zzbystulzhhbpqomdjwj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6YnlzdHVsemhoYnBxb21kandqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NzI0ODIsImV4cCI6MjA5NDA0ODQ4Mn0.hw0C8kBIR5xL56HJhrItsF45oci0-QisKv_OIbMqaow';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let supabase = null;
-let useLocalStorage = true; // fallback until Supabase is configured
-
-function initSupabase() {
-  if (SUPABASE_URL !== 'https://zzbystulzhhbpqomdjwj.supabase.co') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    useLocalStorage = false;
-  }
-}
-
-// ============================================================
-// LOCAL STORAGE (fallback / demo mode)
-// ============================================================
-const DB = {
-  get: (k) => JSON.parse(localStorage.getItem('alpha_'+k) || '[]'),
-  set: (k, v) => localStorage.setItem('alpha_'+k, JSON.stringify(v)),
-};
-
-// Seed demo data
-function seedDemo() {
-  if (DB.get('seeded').length) return;
-  DB.set('clients', [
-    {id:1, name:'Ahmad Razak', phone:'+60 12-345 6789', email:'ahmad@email.com', addr:'No 12, Jalan Wangsa 3, Wangsa Maju, KL', notes:'Regular client'},
-    {id:2, name:'Syarikat ABC Sdn Bhd', phone:'+60 3-1234 5678', email:'info@abc.com.my', addr:'Level 5, Menara ABC, Setapak, KL', notes:'Commercial client'},
-    {id:3, name:'Lim Mei Ling', phone:'+60 16-789 0123', email:'meiling@gmail.com', addr:'Unit 3A, Danau Kota, KL', notes:''},
-  ]);
-  DB.set('staff', [
-    {id:1, name:'Lim (Owner)', role:'Supervisor', type:'fulltime', phone:'+60 17-644 9397', ic:'', salary:0, start:'2019-01-01', notes:'PMP Certified'},
-    {id:2, name:'Farid bin Ali', role:'Plumber', type:'fulltime', phone:'+60 11-234 5678', ic:'', salary:3200, start:'2022-03-01', notes:''},
-    {id:3, name:'Kumar Rajan', role:'Electrician', type:'parttime', phone:'+60 12-987 6543', ic:'', salary:2800, start:'2023-06-01', notes:''},
-  ]);
-  DB.set('jobs', [
-    {id:1, title:'Pipe repair — Wangsa Maju', client:1, status:'completed', start:'2026-04-10', end:'2026-04-11', value:850, staff:[2], invoice:'INV-0001', notes:''},
-    {id:2, title:'Wiring rewire — Setapak office', client:2, status:'active', start:'2026-05-05', end:'2026-05-15', value:4500, staff:[3], invoice:'INV-0002', notes:'Large project with SST'},
-    {id:3, title:'Water heater install — Danau Kota', client:3, status:'pending', start:'2026-05-12', end:'2026-05-12', value:650, staff:[2], invoice:'', notes:''},
-  ]);
-  const today = new Date().toISOString().slice(0,10);
-  const lastMonth = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
-  DB.set('transactions', [
-    {id:1,type:'in',date:'2026-04-11',desc:'Payment — Pipe repair Ahmad',cat:'Service fees',amount:850,scheduled:'',invoice:'INV-0001',notes:'Full payment received'},
-    {id:2,type:'in',date:'2026-04-20',desc:'Deposit — Office wiring ABC',cat:'Project payment',amount:2250,scheduled:'',invoice:'INV-0002',notes:'50% deposit'},
-    {id:3,type:'out',date:'2026-04-30',desc:'Staff salaries April',cat:'Salaries',amount:6000,scheduled:'',invoice:'',notes:''},
-    {id:4,type:'out',date:'2026-04-28',desc:'Tools & equipment',cat:'Tools & equipment',amount:420,scheduled:'',invoice:'',notes:'New pipe fittings'},
-    {id:5,type:'in',date:'2026-05-08',desc:'Deposit — Water heater Lim Mei Ling',cat:'Service fees',amount:325,scheduled:'',invoice:'INV-0003',notes:'50% deposit'},
-    {id:6,type:'out',date:'2026-05-05',desc:'Petrol & transport',cat:'Transport',amount:280,scheduled:'',invoice:'',notes:''},
-    {id:7,type:'in',date:'2026-05-20',desc:'Balance — Office wiring ABC',cat:'Project payment',amount:2250,scheduled:'2026-05-20',invoice:'INV-0002',notes:'Balance on completion'},
-  ]);
-  DB.set('quotations', [
-    {id:1,num:'QUO-0001',client:3,date:'2026-05-01',due:'2026-05-08',job:'Water heater installation',lines:[{desc:'Supply & install water heater',qty:1,unit:500},{desc:'Pipe fittings & labour',qty:1,unit:150}],sst:'no',notes:'Valid for 7 days. 50% deposit required.',status:'accepted'},
-  ]);
-  DB.set('invoices', [
-    {id:1,num:'INV-0001',client:1,date:'2026-04-11',due:'2026-04-11',job:'Pipe repair — Wangsa Maju',lines:[{desc:'Labour & pipe repair',qty:1,unit:850}],sst:'no',notes:'Thank you for your business.',status:'paid',paid_deposit:0,paid_balance:850},
-    {id:2,num:'INV-0002',client:2,date:'2026-05-05',due:'2026-05-16',job:'Full wiring rewire — Setapak office',lines:[{desc:'Wiring & rewiring works',qty:1,unit:3800},{desc:'Materials & fittings',qty:1,unit:700}],sst:'yes',notes:'50% deposit paid. Balance due on completion.',status:'partial',paid_deposit:2250,paid_balance:0},
-    {id:3,num:'INV-0003',client:3,date:'2026-05-08',due:'2026-05-12',job:'Water heater installation',lines:[{desc:'Supply & install water heater',qty:1,unit:500},{desc:'Pipe fittings & labour',qty:1,unit:150}],sst:'no',notes:'50% deposit paid. Balance due on completion.',status:'partial',paid_deposit:325,paid_balance:0},
-  ]);
-  DB.set('receipts', [
-    {id:1,num:'REC-0001',invoice:'INV-0001',client:1,date:'2026-04-11',amount:850,type:'full',notes:'Full payment received. Thank you!'},
-    {id:2,num:'REC-0002',invoice:'INV-0002',client:2,date:'2026-05-05',amount:2250,type:'deposit',notes:'50% deposit received.'},
-  ]);
-  DB.set('targets', [
-    {id:1,label:'Monthly revenue',type:'in',amount:15000},
-    {id:2,label:'Operating expenses',type:'out',amount:8000},
-  ]);
-  DB.set('seeded', [true]);
-}
-
-// ============================================================
 // HELPERS
-// ============================================================
 const fmt = n => 'RM ' + Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtNum = n => Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
-const today = () => new Date().toISOString().slice(0,10);
+const todate = () => new Date().toISOString().slice(0,10);
 const thisMonth = () => new Date().toISOString().slice(0,7);
-const allMonths = () => {
-  const ms = new Set(DB.get('transactions').map(t=>t.date.slice(0,7)));
-  return [...ms].sort().reverse();
-};
-const nextId = (arr) => arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1;
-const clientName = id => { const c = DB.get('clients').find(c=>c.id==id); return c ? c.name : '—'; };
-const statusBadge = s => {
-  const map = {paid:'badge-green',partial:'badge-amber',unpaid:'badge-red',overdue:'badge-red',draft:'badge-gray',sent:'badge-blue',accepted:'badge-green',declined:'badge-red',pending:'badge-amber',active:'badge-blue',completed:'badge-green',cancelled:'badge-gray'};
-  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
-};
-function calcDocTotal(lines, sst) {
-  const sub = lines.reduce((s,l) => s + (l.qty||0)*(l.unit||0), 0);
-  const sstAmt = sst === 'yes' ? sub * 0.06 : 0;
-  return { sub, sstAmt, total: sub + sstAmt };
+
+async function q(table, opts={}) {
+  let req = sb.from(table).select(opts.select||'*');
+  if(opts.eq) Object.entries(opts.eq).forEach(([k,v])=>req=req.eq(k,v));
+  if(opts.order) req=req.order(opts.order,{ascending:opts.asc!==false});
+  if(opts.limit) req=req.limit(opts.limit);
+  const {data,error} = await req;
+  if(error){console.error(table,error);return [];}
+  return data||[];
+}
+async function ins(table, row) {
+  const {data,error} = await sb.from(table).insert(row).select().single();
+  if(error){alert('Save error: '+error.message);return null;}
+  return data;
+}
+async function upd(table, id, row) {
+  const {error} = await sb.from(table).update(row).eq('id',id);
+  if(error){alert('Update error: '+error.message);}
+}
+async function del(table, id) {
+  const {error} = await sb.from(table).delete().eq('id',id);
+  if(error){alert('Delete error: '+error.message);}
+}
+async function nextNum(table, col, prefix, pad=4) {
+  const {data} = await sb.from(table).select(col).order('id',{ascending:false}).limit(1);
+  const last = data&&data.length ? parseInt((data[0][col]||'0').replace(/\D/g,''))||0 : 0;
+  return prefix+'-'+String(last+1).padStart(pad,'0');
 }
 
-// ============================================================
+function calcTotal(lines, sst) {
+  const sub = (lines||[]).reduce((s,l)=>s+(parseFloat(l.qty)||0)*(parseFloat(l.unit)||0),0);
+  const sstAmt = sst==='yes' ? sub*0.06 : 0;
+  return {sub, sstAmt, total:sub+sstAmt};
+}
+
+const statusBadge = s => {
+  const m={paid:'badge-green',partial:'badge-amber',unpaid:'badge-red',overdue:'badge-red',draft:'badge-gray',sent:'badge-blue',accepted:'badge-green',declined:'badge-red',pending:'badge-amber',active:'badge-blue',completed:'badge-green',cancelled:'badge-gray'};
+  return `<span class="badge ${m[s]||'badge-gray'}">${s}</span>`;
+};
+
 // NAVIGATION
-// ============================================================
 const pageTitles = {dashboard:'Dashboard',cashflow:'Cash Flow',quotations:'Quotations',invoices:'Invoices',receipts:'Receipts',clients:'Clients',jobs:'Jobs',staff:'Staff',reports:'Reports'};
 const topbarBtns = {
-  cashflow: () => `<button class="btn btn-primary btn-sm" onclick="openTxModal()">+ Transaction</button>`,
-  quotations: () => `<button class="btn btn-primary btn-sm" onclick="openDocModal('quotation')">+ New Quote</button>`,
-  invoices: () => `<button class="btn btn-primary btn-sm" onclick="openDocModal('invoice')">+ New Invoice</button>`,
-  receipts: () => `<button class="btn btn-primary btn-sm" onclick="openReceiptModal()">+ New Receipt</button>`,
-  clients: () => `<button class="btn btn-primary btn-sm" onclick="openClientModal()">+ Add Client</button>`,
-  jobs: () => `<button class="btn btn-primary btn-sm" onclick="openJobModal()">+ Add Job</button>`,
-  staff: () => `<button class="btn btn-primary btn-sm" onclick="openStaffModal()">+ Add Staff</button>`,
+  cashflow: `<button class="btn btn-primary btn-sm" onclick="openTxModal()">+ Transaction</button>`,
+  quotations: `<button class="btn btn-primary btn-sm" onclick="openDocModal('quotation')">+ New Quote</button>`,
+  invoices: `<button class="btn btn-primary btn-sm" onclick="openDocModal('invoice')">+ New Invoice</button>`,
+  clients: `<button class="btn btn-primary btn-sm" onclick="openClientModal()">+ Add Client</button>`,
+  jobs: `<button class="btn btn-primary btn-sm" onclick="openJobModal()">+ Add Job</button>`,
+  staff: `<button class="btn btn-primary btn-sm" onclick="openStaffModal()">+ Add Staff</button>`,
 };
 
 function showPage(p) {
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(b=>{ if(b.getAttribute('onclick')===`showPage('${p}')`) b.classList.add('active'); });
+  document.querySelectorAll('.nav-item').forEach(b=>{
+    const oc = b.getAttribute('onclick')||'';
+    if(oc.includes("'"+p+"'")) b.classList.add('active');
+  });
   document.getElementById('page-title').textContent = pageTitles[p]||p;
-  document.getElementById('topbar-actions').innerHTML = topbarBtns[p] ? topbarBtns[p]() : '';
+  document.getElementById('topbar-actions').innerHTML = topbarBtns[p]||'';
   const renders = {dashboard:renderDashboard,cashflow:renderCashflow,quotations:renderQuotations,invoices:renderInvoices,receipts:renderReceipts,clients:renderClients,jobs:renderJobs,staff:renderStaff,reports:renderReports};
   if(renders[p]) renders[p]();
 }
 
-// ============================================================
-// DASHBOARD
-// ============================================================
-function renderDashboard() {
+// ── DASHBOARD ──────────────────────────────────────────────
+async function renderDashboard() {
   const now = thisMonth();
-  const txs = DB.get('transactions');
-  const thisTx = txs.filter(t=>t.date.startsWith(now));
-  const totalIn = thisTx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0);
-  const totalOut = thisTx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
-  const net = totalIn - totalOut;
-  const invs = DB.get('invoices');
-  const overdueCount = invs.filter(i=>i.status==='unpaid'&&i.due<today()).length;
+  const [txs, invs] = await Promise.all([
+    q('transactions',{order:'date',asc:false}),
+    q('invoices',{order:'date',asc:false})
+  ]);
+
+  const thisTx = txs.filter(t=>t.date&&t.date.startsWith(now));
+  const totalIn  = thisTx.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const totalOut = thisTx.filter(t=>t.type==='out').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const net = totalIn-totalOut;
   const outstanding = invs.filter(i=>i.status!=='paid').reduce((s,i)=>{
-    const {total} = calcDocTotal(i.lines,i.sst);
-    return s + total - (i.paid_deposit||0) - (i.paid_balance||0);
+    const {total}=calcTotal(i.lines,i.sst);
+    return s+total-(parseFloat(i.paid_deposit)||0)-(parseFloat(i.paid_balance)||0);
   },0);
+  const overdueCount = invs.filter(i=>i.status!=='paid'&&i.due_date&&i.due_date<todate()).length;
 
   document.getElementById('dash-metrics').innerHTML = `
     <div class="metric"><div class="metric-label">This month income</div><div class="metric-value green">${fmt(totalIn)}</div></div>
     <div class="metric"><div class="metric-label">This month expenses</div><div class="metric-value red">${fmt(totalOut)}</div></div>
     <div class="metric"><div class="metric-label">Net this month</div><div class="metric-value ${net>=0?'green':'red'}">${fmt(net)}</div></div>
-    <div class="metric"><div class="metric-label">Outstanding amount</div><div class="metric-value blue">${fmt(outstanding)}</div><div class="metric-sub">${overdueCount} overdue invoice${overdueCount!==1?'s':''}</div></div>
-  `;
+    <div class="metric"><div class="metric-label">Outstanding</div><div class="metric-value blue">${fmt(outstanding)}</div><div class="metric-sub">${overdueCount} overdue</div></div>`;
 
-  // Upcoming scheduled
-  const upcoming = txs.filter(t=>t.scheduled&&t.scheduled>today()).sort((a,b)=>a.scheduled.localeCompare(b.scheduled)).slice(0,5);
+  const upcoming = txs.filter(t=>t.scheduled_date&&t.scheduled_date>todate()).sort((a,b)=>a.scheduled_date.localeCompare(b.scheduled_date)).slice(0,5);
   document.getElementById('dash-upcoming').innerHTML = upcoming.length ? upcoming.map(t=>`
     <div class="upcoming-item">
       <div class="upcoming-dot" style="background:${t.type==='in'?'var(--green)':'var(--red)'}"></div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:500">${t.desc}</div>
-        <div style="font-size:11px;color:var(--text3)">${t.scheduled}</div>
-      </div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${t.description}</div><div style="font-size:11px;color:var(--text3)">${t.scheduled_date}</div></div>
       <div style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace;color:${t.type==='in'?'var(--green)':'var(--red)'}">${t.type==='in'?'+':'-'}${fmt(t.amount)}</div>
     </div>`).join('') : '<div class="empty"><p>No upcoming scheduled payments</p></div>';
 
-  // Recent invoices
-  const recentInv = [...invs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
-  document.getElementById('dash-invoices').innerHTML = recentInv.length ? `<table><tbody>${recentInv.map(i=>{
-    const {total} = calcDocTotal(i.lines,i.sst);
-    return `<tr><td><span style="font-family:'DM Mono',monospace;font-size:12px">${i.num}</span><br><span style="font-size:11px;color:var(--text3)">${clientName(i.client)}</span></td><td>${statusBadge(i.status)}</td><td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(total)}</td></tr>`;
+  document.getElementById('dash-invoices').innerHTML = invs.slice(0,5).length ? `<table><tbody>${invs.slice(0,5).map(i=>{
+    const {total}=calcTotal(i.lines,i.sst);
+    return `<tr><td><span style="font-family:'DM Mono',monospace;font-size:12px">${i.num}</span><br><span style="font-size:11px;color:var(--text3)">${i.client_name||'—'}</span></td><td>${statusBadge(i.status)}</td><td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(total)}</td></tr>`;
   }).join('')}</tbody></table>` : '<div class="empty"><p>No invoices yet</p></div>';
 
-  // Recent transactions
-  const recentTx = [...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  const recentTx = txs.slice(0,6);
   document.getElementById('dash-transactions').innerHTML = recentTx.length ? `<table>
     <thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
-    <tbody>${recentTx.map(t=>`<tr><td style="font-size:12px;color:var(--text2)">${t.date}</td><td>${t.desc}</td><td><span class="badge badge-gray">${t.cat}</span></td><td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace;color:${t.type==='in'?'var(--green)':'var(--red)'}">${t.type==='in'?'+':'-'}${fmt(t.amount)}</td></tr>`).join('')}</tbody>
-  </table>` : '<div class="empty"><p>No transactions yet</p></div>';
-
-  // overdue badge
-  const badge = document.getElementById('overdue-badge');
-  badge.style.display = overdueCount ? 'inline' : 'none';
+    <tbody>${recentTx.map(t=>`<tr>
+      <td style="font-size:12px;color:var(--text2)">${t.date}</td>
+      <td>${t.description}</td>
+      <td><span class="badge badge-gray">${t.category||''}</span></td>
+      <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace;color:${t.type==='in'?'var(--green)':'var(--red)'}">${t.type==='in'?'+':'-'}${fmt(t.amount)}</td>
+    </tr>`).join('')}</tbody></table>` : '<div class="empty"><p>No transactions yet</p></div>';
 }
 
-// ============================================================
-// CASH FLOW
-// ============================================================
-const CATS_IN = ['Service fees','Project payment','Retainer','Deposit received','Consultation','Other income'];
-const CATS_OUT = ['Salaries','Rent','Utilities','Marketing','Tools & equipment','Transport','Materials','Professional fees','Tax','Insurance','Other expense'];
+// ── CASH FLOW ──────────────────────────────────────────────
+const CATS_IN  = ['Service fees','Project payment','Retainer','Deposit received','Consultation','Other income'];
+const CATS_OUT = ['Salaries','Transport','Materials','Tools & equipment','Rent','Utilities','Marketing','Professional fees','Tax','Insurance','Other expense'];
 
-function renderCashflow() {
-  // metrics
+async function renderCashflow() {
+  const txs = await q('transactions',{order:'date',asc:false});
   const now = thisMonth();
-  const txs = DB.get('transactions');
-  const thisTx = txs.filter(t=>t.date.startsWith(now));
-  const totalIn = thisTx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0);
-  const totalOut = thisTx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
+  const thisTx = txs.filter(t=>t.date&&t.date.startsWith(now));
+  const totalIn  = thisTx.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const totalOut = thisTx.filter(t=>t.type==='out').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+
   document.getElementById('cf-metrics').innerHTML = `
     <div class="metric"><div class="metric-label">This month in</div><div class="metric-value green">${fmt(totalIn)}</div></div>
     <div class="metric"><div class="metric-label">This month out</div><div class="metric-value red">${fmt(totalOut)}</div></div>
-    <div class="metric"><div class="metric-label">Net</div><div class="metric-value ${totalIn-totalOut>=0?'green':'red'}">${fmt(totalIn-totalOut)}</div></div>
-  `;
+    <div class="metric"><div class="metric-label">Net</div><div class="metric-value ${totalIn-totalOut>=0?'green':'red'}">${fmt(totalIn-totalOut)}</div></div>`;
 
-  // populate month filter
-  const mSel = document.getElementById('cf-month');
-  const months = allMonths();
-  const curM = mSel.value || now;
-  mSel.innerHTML = '<option value="">All months</option>' + months.map(m=>`<option value="${m}" ${m===curM?'selected':''}>${m}</option>`).join('');
+  const months=[...new Set(txs.map(t=>t.date&&t.date.slice(0,7)).filter(Boolean))].sort().reverse();
+  const mSel=document.getElementById('cf-month');
+  const curM=mSel.value||now;
+  mSel.innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}"${m===curM?' selected':''}>${m}</option>`).join('');
 
-  // populate cat filter
-  const catSel = document.getElementById('tx-cat');
-  const curType = document.getElementById('tx-type')?.value || 'in';
-  catSel.innerHTML = (curType==='in'?CATS_IN:CATS_OUT).map(c=>`<option>${c}</option>`).join('');
-
-  // filter
-  const fType = document.getElementById('cf-type').value;
-  const fMonth = document.getElementById('cf-month').value;
-  const fSearch = document.getElementById('cf-search').value.toLowerCase();
-  let filtered = [...txs].sort((a,b)=>b.date.localeCompare(a.date));
-  if(fType) filtered = filtered.filter(t=>t.type===fType);
-  if(fMonth) filtered = filtered.filter(t=>t.date.startsWith(fMonth));
-  if(fSearch) filtered = filtered.filter(t=>t.desc.toLowerCase().includes(fSearch)||t.cat.toLowerCase().includes(fSearch));
+  const fType=document.getElementById('cf-type').value;
+  const fMonth=document.getElementById('cf-month').value;
+  const fSearch=(document.getElementById('cf-search').value||'').toLowerCase();
+  let filtered=txs;
+  if(fType) filtered=filtered.filter(t=>t.type===fType);
+  if(fMonth) filtered=filtered.filter(t=>t.date&&t.date.startsWith(fMonth));
+  if(fSearch) filtered=filtered.filter(t=>(t.description||'').toLowerCase().includes(fSearch)||(t.category||'').toLowerCase().includes(fSearch));
 
   document.getElementById('cf-table').innerHTML = filtered.length ? `<table>
     <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Scheduled</th><th style="text-align:right">Amount</th><th></th></tr></thead>
     <tbody>${filtered.map(t=>`<tr>
       <td style="font-size:12px;color:var(--text2);white-space:nowrap">${t.date}</td>
-      <td>${t.desc}${t.invoice?`<br><span style="font-size:11px;color:var(--blue)">${t.invoice}</span>`:''}</td>
-      <td><span class="badge badge-gray">${t.cat}</span></td>
+      <td>${t.description||''}${t.invoice_num?`<br><span style="font-size:11px;color:var(--blue)">${t.invoice_num}</span>`:''}</td>
+      <td><span class="badge badge-gray">${t.category||''}</span></td>
       <td><span class="badge ${t.type==='in'?'badge-green':'badge-red'}">${t.type==='in'?'In':'Out'}</span></td>
-      <td style="font-size:12px;color:var(--text3)">${t.scheduled||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${t.scheduled_date||'—'}</td>
       <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace;color:${t.type==='in'?'var(--green)':'var(--red)'}">${t.type==='in'?'+':'-'}${fmt(t.amount)}</td>
       <td><button class="btn btn-sm btn-ghost" onclick="deleteTx(${t.id})">✕</button></td>
-    </tr>`).join('')}</tbody>
-  </table>` : '<div class="empty"><p>No transactions match your filters</p></div>';
+    </tr>`).join('')}</tbody></table>` : '<div class="empty"><p>No transactions yet. Click "+ Transaction" to add one.</p></div>';
 
-  // targets
-  renderTargets();
+  await renderTargets();
 }
 
-function openTxModal(id) {
-  document.getElementById('tx-modal-title').textContent = id ? 'Edit Transaction' : 'Add Transaction';
-  document.getElementById('tx-date').value = today();
-  document.getElementById('tx-scheduled').value = '';
-  document.getElementById('tx-invoice').value = '';
-  document.getElementById('tx-notes').value = '';
-  document.getElementById('tx-amount').value = '';
-  document.getElementById('tx-desc').value = '';
+// Transaction modal
+let txEditId=null;
+function openTxModal() {
+  txEditId=null;
+  document.getElementById('tx-modal-title').textContent='Add Transaction';
+  document.getElementById('tx-date').value=todate();
+  document.getElementById('tx-desc').value='';
+  document.getElementById('tx-amount').value='';
+  document.getElementById('tx-scheduled').value='';
+  document.getElementById('tx-invoice').value='';
+  document.getElementById('tx-notes').value='';
   updateTxCats();
-  document.getElementById('tx-type').onchange = updateTxCats;
+  document.getElementById('tx-type').onchange=updateTxCats;
   document.getElementById('txModal').classList.add('open');
 }
-function updateTxCats() {
-  const t = document.getElementById('tx-type').value;
-  document.getElementById('tx-cat').innerHTML = (t==='in'?CATS_IN:CATS_OUT).map(c=>`<option>${c}</option>`).join('');
+function updateTxCats(){
+  const t=document.getElementById('tx-type').value;
+  document.getElementById('tx-cat').innerHTML=(t==='in'?CATS_IN:CATS_OUT).map(c=>`<option>${c}</option>`).join('');
 }
-function closeTxModal() { document.getElementById('txModal').classList.remove('open'); }
-function saveTx() {
-  const desc = document.getElementById('tx-desc').value.trim();
-  const amount = parseFloat(document.getElementById('tx-amount').value);
-  if(!desc || !amount || amount<=0) return alert('Please fill in description and amount.');
-  const txs = DB.get('transactions');
-  txs.push({id:nextId(txs),type:document.getElementById('tx-type').value,date:document.getElementById('tx-date').value,desc,cat:document.getElementById('tx-cat').value,amount,scheduled:document.getElementById('tx-scheduled').value,invoice:document.getElementById('tx-invoice').value,notes:document.getElementById('tx-notes').value});
-  DB.set('transactions',txs);
+function closeTxModal(){document.getElementById('txModal').classList.remove('open');}
+async function saveTx(){
+  const desc=document.getElementById('tx-desc').value.trim();
+  const amount=parseFloat(document.getElementById('tx-amount').value);
+  if(!desc||!amount||amount<=0) return alert('Please fill in description and amount.');
+  const row={type:document.getElementById('tx-type').value,date:document.getElementById('tx-date').value,description:desc,category:document.getElementById('tx-cat').value,amount,scheduled_date:document.getElementById('tx-scheduled').value||null,invoice_num:document.getElementById('tx-invoice').value||null,notes:document.getElementById('tx-notes').value||null};
+  await ins('transactions',row);
   closeTxModal();
   renderCashflow();
   renderDashboard();
 }
-function deleteTx(id) {
-  if(!confirm('Delete this transaction?')) return;
-  DB.set('transactions', DB.get('transactions').filter(t=>t.id!==id));
-  renderCashflow();
-}
-function renderTargets() {
-  const now = thisMonth();
-  const txs = DB.get('transactions').filter(t=>t.date.startsWith(now));
-  const actualIn = txs.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0);
-  const actualOut = txs.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
-  const targets = DB.get('targets');
-  document.getElementById('targets-list').innerHTML = targets.length ? targets.map(tg=>{
-    const actual = tg.type==='in'?actualIn:actualOut;
-    const pct = tg.amount ? Math.min(200, Math.round(actual/tg.amount*100)) : 0;
-    const cls = tg.type==='in' ? (pct>=100?'':'') : (pct>=100?'over':pct>=80?'warn':'');
+async function deleteTx(id){if(!confirm('Delete this transaction?'))return;await del('transactions',id);renderCashflow();}
+
+async function renderTargets(){
+  const now=thisMonth();
+  const [txs,targets]=await Promise.all([q('transactions'),q('targets')]);
+  const thisTx=txs.filter(t=>t.date&&t.date.startsWith(now));
+  const actualIn=thisTx.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const actualOut=thisTx.filter(t=>t.type==='out').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  document.getElementById('targets-list').innerHTML=targets.length?targets.map(tg=>{
+    const actual=tg.type==='in'?actualIn:actualOut;
+    const pct=tg.amount?Math.min(200,Math.round(actual/parseFloat(tg.amount)*100)):0;
+    const cls=tg.type==='out'?(pct>=100?'over':pct>=80?'warn':''):'';
     return `<div style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="font-weight:500;font-size:13px">${tg.label}</span>
+        <span style="font-weight:500;font-size:13px">${tg.label} <span style="font-size:11px;color:var(--text3)">(${tg.type==='in'?'income target':'expense limit'})</span></span>
         <span style="font-size:13px;font-family:'DM Mono',monospace">${fmt(actual)} / ${fmt(tg.amount)}</span>
       </div>
       <div class="progress"><div class="progress-fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px">${pct}% ${tg.type==='in'?'achieved':'used'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">${pct}% ${tg.type==='in'?'achieved':'used'} &nbsp;<button class="btn btn-sm btn-ghost" style="padding:1px 6px;font-size:11px" onclick="delTarget(${tg.id})">remove</button></div>
     </div>`;
-  }).join('') : '<div class="empty"><p>No targets set. Click "+ Set Target" to add one.</p></div>';
+  }).join(''):'<div class="empty"><p>No targets set. Click "+ Set Target" to add one.</p></div>';
 }
-function openTargetModal() { document.getElementById('targetModal').classList.add('open'); }
-function saveTarget() {
-  const label = document.getElementById('tgt-label').value.trim();
-  const amount = parseFloat(document.getElementById('tgt-amount').value);
+function openTargetModal(){document.getElementById('targetModal').classList.add('open');}
+async function saveTarget(){
+  const label=document.getElementById('tgt-label').value.trim();
+  const amount=parseFloat(document.getElementById('tgt-amount').value);
   if(!label||!amount) return alert('Fill in all fields.');
-  const targets = DB.get('targets');
-  targets.push({id:nextId(targets),label,type:document.getElementById('tgt-type').value,amount});
-  DB.set('targets',targets);
+  await ins('targets',{label,type:document.getElementById('tgt-type').value,amount});
   document.getElementById('targetModal').classList.remove('open');
   renderTargets();
 }
+async function delTarget(id){if(!confirm('Remove this target?'))return;await del('targets',id);renderTargets();}
 
-// ============================================================
-// DOCUMENT BUILDER (QUOTES & INVOICES)
-// ============================================================
-let docMode = 'quotation';
-let docEditId = null;
+// ── DOCUMENT BUILDER (QUOTES & INVOICES) ──────────────────
+let docMode='quotation';
+let docLineCount=0;
 
-function openDocModal(mode, id) {
-  docMode = mode; docEditId = id || null;
-  document.getElementById('doc-modal-title').textContent = id ? `Edit ${mode}` : `New ${mode==='quotation'?'Quotation':'Invoice'}`;
-  document.getElementById('doc-save-btn').textContent = `Save ${mode==='quotation'?'Quotation':'Invoice'}`;
-  document.getElementById('doc-date').value = today();
-  document.getElementById('doc-lines').innerHTML = '';
-  document.getElementById('doc-job').value = '';
-  document.getElementById('doc-notes').value = mode==='invoice' ? 'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.' : 'Valid for 7 days. 50% deposit required to confirm job.';
-  document.getElementById('doc-sst').value = 'no';
+async function openDocModal(mode, existingId) {
+  docMode=mode;
+  document.getElementById('doc-modal-title').textContent=existingId?`Edit ${mode}`:`New ${mode==='quotation'?'Quotation':'Invoice'}`;
+  document.getElementById('doc-save-btn').textContent=`Save ${mode==='quotation'?'Quotation':'Invoice'}`;
+  document.getElementById('doc-date').value=todate();
+  document.getElementById('doc-due').value='';
+  document.getElementById('doc-job').value='';
+  document.getElementById('doc-sst').value='no';
+  document.getElementById('doc-notes').value=mode==='invoice'?'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.':'Valid for 7 days. 50% deposit required to confirm job.';
+  document.getElementById('doc-lines').innerHTML='';
+  docLineCount=0;
 
-  // populate clients
-  const clients = DB.get('clients');
-  document.getElementById('doc-client').innerHTML = '<option value="">Select client...</option>' + clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const clients=await q('clients',{order:'name'});
+  document.getElementById('doc-client').innerHTML='<option value="">Select client...</option>'+clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 
-  if(id) {
-    const doc = DB.get(mode==='quotation'?'quotations':'invoices').find(d=>d.id==id);
-    if(doc) {
-      document.getElementById('doc-client').value = doc.client;
-      document.getElementById('doc-date').value = doc.date;
-      document.getElementById('doc-due').value = doc.due;
-      document.getElementById('doc-job').value = doc.job;
-      document.getElementById('doc-sst').value = doc.sst;
-      document.getElementById('doc-notes').value = doc.notes;
-      doc.lines.forEach(l=>addDocLine(l));
+  if(existingId){
+    const col=mode==='quotation'?'quotations':'invoices';
+    const docs=await q(col,{eq:{id:existingId}});
+    if(docs.length){
+      const d=docs[0];
+      document.getElementById('doc-client').value=d.client_id;
+      document.getElementById('doc-date').value=d.date;
+      document.getElementById('doc-due').value=d.due_date||'';
+      document.getElementById('doc-job').value=d.job||'';
+      document.getElementById('doc-sst').value=d.sst||'no';
+      document.getElementById('doc-notes').value=d.notes||'';
+      (d.lines||[]).forEach(l=>addDocLine(l));
     }
   } else {
     addDocLine();
   }
   updateDocTotal();
+  document.getElementById('doc-sst').onchange=updateDocTotal;
   document.getElementById('docModal').classList.add('open');
 }
-function closeDocModal() { document.getElementById('docModal').classList.remove('open'); }
-function fillClientInfo() {}
-function addDocLine(line) {
-  const div = document.createElement('div');
-  div.className = 'item-line';
-  div.innerHTML = `
-    <input type="text" placeholder="Description of work..." value="${line?line.desc:''}" onchange="updateDocTotal()">
-    <input type="number" placeholder="1" min="0" step="0.5" value="${line?line.qty:1}" onchange="updateDocTotal()">
-    <input type="number" placeholder="0.00" min="0" step="0.01" value="${line?line.unit:''}" onchange="updateDocTotal()">
+function closeDocModal(){document.getElementById('docModal').classList.remove('open');}
+
+function addDocLine(line){
+  const id='line-'+Date.now()+'-'+(docLineCount++);
+  const div=document.createElement('div');
+  div.className='item-line';
+  div.id=id;
+  div.innerHTML=`
+    <input type="text" placeholder="Description of work..." value="${line?escHtml(line.desc||''):''}" oninput="updateDocTotal()">
+    <input type="number" placeholder="1" min="0" step="0.5" value="${line?line.qty:1}" oninput="updateDocTotal()">
+    <input type="number" placeholder="0.00" min="0" step="0.01" value="${line?line.unit:''}" oninput="updateDocTotal()">
     <span class="item-line-total">RM 0.00</span>
-    <button class="remove-line" onclick="this.closest('.item-line').remove();updateDocTotal()">✕</button>
-  `;
+    <button class="remove-line" onclick="document.getElementById('${id}').remove();updateDocTotal()">✕</button>`;
   document.getElementById('doc-lines').appendChild(div);
   updateDocTotal();
 }
-function getDocLines() {
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function getDocLines(){
   return [...document.querySelectorAll('#doc-lines .item-line')].map(row=>{
-    const inputs = row.querySelectorAll('input');
-    return {desc:inputs[0].value, qty:parseFloat(inputs[1].value)||0, unit:parseFloat(inputs[2].value)||0};
-  });
+    const inputs=row.querySelectorAll('input');
+    return {desc:inputs[0].value.trim(),qty:parseFloat(inputs[1].value)||0,unit:parseFloat(inputs[2].value)||0};
+  }).filter(l=>l.desc);
 }
-function updateDocTotal() {
-  const lines = getDocLines();
-  const sst = document.getElementById('doc-sst').value;
-  const {sub, sstAmt, total} = calcDocTotal(lines, sst);
-  document.querySelectorAll('#doc-lines .item-line').forEach((row, i)=>{
-    const l = lines[i];
-    row.querySelector('.item-line-total').textContent = 'RM '+fmtNum(l.qty*l.unit);
+function updateDocTotal(){
+  const lines=getDocLines();
+  const sst=document.getElementById('doc-sst').value;
+  const {sub,sstAmt,total}=calcTotal(lines,sst);
+  document.querySelectorAll('#doc-lines .item-line').forEach((row,i)=>{
+    const inputs=row.querySelectorAll('input');
+    const qty=parseFloat(inputs[1]?.value)||0;
+    const unit=parseFloat(inputs[2]?.value)||0;
+    const span=row.querySelector('.item-line-total');
+    if(span) span.textContent='RM '+fmtNum(qty*unit);
   });
-  document.getElementById('doc-subtotal').textContent = fmtNum(sub);
-  document.getElementById('doc-sst-amt').textContent = fmtNum(sstAmt);
-  document.getElementById('doc-total').textContent = fmtNum(total);
-  document.getElementById('doc-sst').onchange = updateDocTotal;
+  document.getElementById('doc-subtotal').textContent=fmtNum(sub);
+  document.getElementById('doc-sst-amt').textContent=fmtNum(sstAmt);
+  document.getElementById('doc-total').textContent=fmtNum(total);
 }
-function saveDoc() {
-  const clientId = parseInt(document.getElementById('doc-client').value);
-  const lines = getDocLines();
+
+async function saveDoc(){
+  const clientId=parseInt(document.getElementById('doc-client').value);
+  const lines=getDocLines();
   if(!clientId) return alert('Please select a client.');
-  if(!lines.length || !lines[0].desc) return alert('Please add at least one line item.');
-
-  const col = docMode==='quotation' ? 'quotations' : 'invoices';
-  const docs = DB.get(col);
-  const prefix = docMode==='quotation' ? 'QUO' : 'INV';
-  const num = prefix+'-'+String(nextId(docs)).padStart(4,'0');
-
-  const doc = {
-    id: docEditId || nextId(docs),
-    num: docEditId ? docs.find(d=>d.id===docEditId).num : num,
-    client: clientId,
-    date: document.getElementById('doc-date').value,
-    due: document.getElementById('doc-due').value,
-    job: document.getElementById('doc-job').value,
+  if(!lines.length) return alert('Please add at least one line item.');
+  const col=docMode==='quotation'?'quotations':'invoices';
+  const prefix=docMode==='quotation'?'QUO':'INV';
+  const num=await nextNum(col,'num',prefix);
+  const row={
+    num,client_id:clientId,
+    date:document.getElementById('doc-date').value,
+    due_date:document.getElementById('doc-due').value||null,
+    job:document.getElementById('doc-job').value,
     lines,
-    sst: document.getElementById('doc-sst').value,
-    notes: document.getElementById('doc-notes').value,
-    status: docEditId ? docs.find(d=>d.id===docEditId).status : (docMode==='invoice'?'unpaid':'draft'),
-    paid_deposit: 0,
-    paid_balance: 0,
+    sst:document.getElementById('doc-sst').value,
+    notes:document.getElementById('doc-notes').value,
+    status:docMode==='invoice'?'unpaid':'draft',
+    paid_deposit:0,paid_balance:0
   };
-
-  if(docEditId) { const i=docs.findIndex(d=>d.id===docEditId); docs[i]=doc; } else docs.push(doc);
-  DB.set(col, docs);
-  closeDocModal();
-  if(docMode==='quotation') renderQuotations(); else renderInvoices();
+  const saved=await ins(col,row);
+  if(saved){closeDocModal();docMode==='quotation'?renderQuotations():renderInvoices();}
 }
 
-// ============================================================
-// QUOTATIONS
-// ============================================================
-function renderQuotations() {
-  const quots = DB.get('quotations');
-  document.getElementById('quot-table').innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 0 16px">
-      <span style="font-size:13px;color:var(--text2)">${quots.length} quotation${quots.length!==1?'s':''}</span>
-    </div>
-    ${quots.length ? `<table>
+// ── QUOTATIONS ────────────────────────────────────────────
+async function renderQuotations(){
+  const quots=await q('quotations',{order:'id',asc:false});
+  const clients=await q('clients');
+  const cmap=Object.fromEntries(clients.map(c=>[c.id,c.name]));
+  document.getElementById('quot-table').innerHTML=quots.length?`<table>
     <thead><tr><th>Quote #</th><th>Client</th><th>Job</th><th>Date</th><th>Valid until</th><th style="text-align:right">Amount</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${quots.map(q=>{
-      const {total} = calcDocTotal(q.lines,q.sst);
+      const {total}=calcTotal(q.lines,q.sst);
       return `<tr>
         <td style="font-family:'DM Mono',monospace;font-size:12px">${q.num}</td>
-        <td>${clientName(q.client)}</td>
-        <td style="color:var(--text2)">${q.job}</td>
+        <td>${cmap[q.client_id]||'—'}</td>
+        <td style="color:var(--text2);font-size:12px">${q.job||''}</td>
         <td style="font-size:12px;color:var(--text3)">${q.date}</td>
-        <td style="font-size:12px;color:var(--text3)">${q.due}</td>
+        <td style="font-size:12px;color:var(--text3)">${q.due_date||'—'}</td>
         <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(total)}</td>
         <td>${statusBadge(q.status)}</td>
-        <td>
-          <div style="display:flex;gap:4px">
-            <button class="btn btn-sm btn-ghost" onclick="previewDoc('quotation',${q.id})">Preview</button>
-            <button class="btn btn-sm" onclick="convertQuoteToInvoice(${q.id})">→ Invoice</button>
-            <select class="btn btn-sm" style="padding:4px" onchange="updateQuotStatus(${q.id},this.value)">
-              <option ${q.status==='draft'?'selected':''} value="draft">Draft</option>
-              <option ${q.status==='sent'?'selected':''} value="sent">Sent</option>
-              <option ${q.status==='accepted'?'selected':''} value="accepted">Accepted</option>
-              <option ${q.status==='declined'?'selected':''} value="declined">Declined</option>
-            </select>
-          </div>
-        </td>
-      </tr>`;
-    }).join('')}</tbody></table>` : '<div class="empty"><p>No quotations yet. Click "+ New Quote" to create one.</p></div>'}
-  `;
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-ghost" onclick="previewDoc('quotation',${q.id})">Preview / PDF</button>
+          <button class="btn btn-sm" onclick="convertToInvoice(${q.id})">→ Invoice</button>
+          <select class="btn btn-sm" style="padding:4px" onchange="updateDocStatus('quotations',${q.id},this.value)">
+            <option${q.status==='draft'?' selected':''} value="draft">Draft</option>
+            <option${q.status==='sent'?' selected':''} value="sent">Sent</option>
+            <option${q.status==='accepted'?' selected':''} value="accepted">Accepted</option>
+            <option${q.status==='declined'?' selected':''} value="declined">Declined</option>
+          </select>
+        </div></td></tr>`;
+    }).join('')}</tbody></table>`:'<div class="empty"><p>No quotations yet. Click "+ New Quote" to create one.</p></div>';
 }
-function updateQuotStatus(id, status) {
-  const quots = DB.get('quotations');
-  const q = quots.find(q=>q.id===id);
-  if(q) { q.status=status; DB.set('quotations',quots); }
-}
-function convertQuoteToInvoice(id) {
-  if(!confirm('Convert this quotation to an invoice?')) return;
-  const q = DB.get('quotations').find(q=>q.id===id);
-  if(!q) return;
-  const invs = DB.get('invoices');
-  const num = 'INV-'+String(nextId(invs)).padStart(4,'0');
-  invs.push({...q, id:nextId(invs), num, status:'unpaid', paid_deposit:0, paid_balance:0,
-    notes:'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.'});
-  DB.set('invoices',invs);
-  const quots = DB.get('quotations');
-  const qi = quots.findIndex(q2=>q2.id===id);
-  quots[qi].status = 'accepted';
-  DB.set('quotations',quots);
-  renderQuotations();
-  alert('Invoice '+num+' created! Go to Invoices to view it.');
+async function updateDocStatus(table,id,status){await upd(table,id,{status});if(table==='quotations')renderQuotations();else renderInvoices();}
+async function convertToInvoice(id){
+  if(!confirm('Convert this quotation to an invoice?'))return;
+  const quots=await q('quotations',{eq:{id}});
+  if(!quots.length)return;
+  const qd=quots[0];
+  const num=await nextNum('invoices','num','INV');
+  const row={num,client_id:qd.client_id,date:todate(),due_date:null,job:qd.job,lines:qd.lines,sst:qd.sst,notes:'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.',status:'unpaid',paid_deposit:0,paid_balance:0,from_quote_id:id};
+  const saved=await ins('invoices',row);
+  if(saved){await upd('quotations',id,{status:'accepted'});alert('Invoice '+num+' created! Go to Invoices to view it.');renderQuotations();}
 }
 
-// ============================================================
-// INVOICES
-// ============================================================
-function renderInvoices() {
-  const invs = DB.get('invoices');
-  document.getElementById('inv-table').innerHTML = invs.length ? `<table>
+// ── INVOICES ──────────────────────────────────────────────
+async function renderInvoices(){
+  const invs=await q('invoices',{order:'id',asc:false});
+  const clients=await q('clients');
+  const cmap=Object.fromEntries(clients.map(c=>[c.id,c.name]));
+  document.getElementById('inv-table').innerHTML=invs.length?`<table>
     <thead><tr><th>Invoice #</th><th>Client</th><th>Job</th><th>Date</th><th>Due</th><th style="text-align:right">Total</th><th style="text-align:right">Paid</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${invs.map(inv=>{
-      const {total} = calcDocTotal(inv.lines,inv.sst);
-      const paid = (inv.paid_deposit||0)+(inv.paid_balance||0);
-      const isOverdue = inv.status!=='paid'&&inv.due<today();
-      return `<tr ${isOverdue?'style="background:#fff8f8"':''}>
+      const {total}=calcTotal(inv.lines,inv.sst);
+      const paid=(parseFloat(inv.paid_deposit)||0)+(parseFloat(inv.paid_balance)||0);
+      const isOverdue=inv.status!=='paid'&&inv.due_date&&inv.due_date<todate();
+      return `<tr${isOverdue?' style="background:#fff8f8"':''}>
         <td style="font-family:'DM Mono',monospace;font-size:12px">${inv.num}</td>
-        <td>${clientName(inv.client)}</td>
-        <td style="color:var(--text2);font-size:12px">${inv.job}</td>
+        <td>${cmap[inv.client_id]||'—'}</td>
+        <td style="color:var(--text2);font-size:12px">${inv.job||''}</td>
         <td style="font-size:12px;color:var(--text3)">${inv.date}</td>
-        <td style="font-size:12px;color:${isOverdue?'var(--red)':'var(--text3)'}">${inv.due}${isOverdue?' ⚠':''}</td>
+        <td style="font-size:12px;color:${isOverdue?'var(--red)':'var(--text3)'}">${inv.due_date||'—'}${isOverdue?' ⚠':''}</td>
         <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(total)}</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green)">${fmt(paid)}</td>
         <td>${statusBadge(isOverdue?'overdue':inv.status)}</td>
-        <td>
-          <div style="display:flex;gap:4px;flex-wrap:wrap">
-            <button class="btn btn-sm btn-ghost" onclick="previewDoc('invoice',${inv.id})">Preview</button>
-            <button class="btn btn-sm" onclick="recordPayment(${inv.id})">Record payment</button>
-          </div>
-        </td>
-      </tr>`;
-    }).join('')}</tbody></table>` : '<div class="empty"><p>No invoices yet.</p></div>';
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-ghost" onclick="previewDoc('invoice',${inv.id})">Preview / PDF</button>
+          <button class="btn btn-sm" onclick="recordPayment(${inv.id},${total},${paid})">Record payment</button>
+        </div></td></tr>`;
+    }).join('')}</tbody></table>`:'<div class="empty"><p>No invoices yet. Click "+ New Invoice" or convert a quotation.</p></div>';
 }
-function recordPayment(id) {
-  const invs = DB.get('invoices');
-  const inv = invs.find(i=>i.id===id);
-  if(!inv) return;
-  const {total} = calcDocTotal(inv.lines,inv.sst);
-  const paid = (inv.paid_deposit||0)+(inv.paid_balance||0);
-  const remaining = total - paid;
-  const type = paid===0 ? 'deposit' : 'balance';
-  const suggested = paid===0 ? total*0.5 : remaining;
-  const amt = parseFloat(prompt(`Record payment for ${inv.num}\nTotal: ${fmt(total)}\nPaid so far: ${fmt(paid)}\nSuggested amount (${type}): ${fmtNum(suggested)}\n\nEnter amount to record:`, fmtNum(suggested)));
-  if(!amt||isNaN(amt)) return;
-  if(paid===0) inv.paid_deposit = amt; else inv.paid_balance = (inv.paid_balance||0)+amt;
-  const newPaid = (inv.paid_deposit||0)+(inv.paid_balance||0);
-  inv.status = newPaid>=total ? 'paid' : 'partial';
-  DB.set('invoices',invs);
 
-  // Auto-create transaction
-  const txs = DB.get('transactions');
-  txs.push({id:nextId(txs),type:'in',date:today(),desc:`Payment (${type}) — ${inv.num} — ${clientName(inv.client)}`,cat:'Service fees',amount:amt,scheduled:'',invoice:inv.num,notes:''});
-  DB.set('transactions',txs);
+async function recordPayment(id,total,paid){
+  const remaining=total-paid;
+  const type=paid===0?'deposit':'balance';
+  const suggested=paid===0?total*0.5:remaining;
+  const amt=parseFloat(prompt(`Record payment for invoice\nTotal: ${fmt(total)}\nPaid so far: ${fmt(paid)}\nRemaining: ${fmt(remaining)}\n\nEnter amount received (RM):`,fmtNum(suggested)));
+  if(!amt||isNaN(amt))return;
+  const invs=await q('invoices',{eq:{id}});
+  if(!invs.length)return;
+  const inv=invs[0];
+  const newDeposit=paid===0?amt:(parseFloat(inv.paid_deposit)||0);
+  const newBalance=paid===0?(parseFloat(inv.paid_balance)||0):(parseFloat(inv.paid_balance)||0)+amt;
+  const newPaid=newDeposit+newBalance;
+  const newStatus=newPaid>=total?'paid':'partial';
+  await upd('invoices',id,{paid_deposit:newDeposit,paid_balance:newBalance,status:newStatus});
 
-  // Auto-create receipt
-  if(inv.status==='paid' || type==='deposit') {
-    const recs = DB.get('receipts');
-    const num = 'REC-'+String(nextId(recs)).padStart(4,'0');
-    recs.push({id:nextId(recs),num,invoice:inv.num,client:inv.client,date:today(),amount:amt,type,notes:type==='deposit'?'50% deposit received. Balance due on completion.':'Full payment received. Thank you!'});
-    DB.set('receipts',recs);
-    alert(`Payment recorded. Receipt ${num} auto-generated!`);
-  } else {
-    alert('Payment recorded and transaction added to cash flow.');
-  }
+  // auto-post to transactions
+  const clients=await q('clients',{eq:{id:inv.client_id}});
+  const cname=clients.length?clients[0].name:'Client';
+  await ins('transactions',{type:'in',date:todate(),description:`Payment (${type}) — ${inv.num} — ${cname}`,category:'Service fees',amount:amt,invoice_num:inv.num,notes:null,scheduled_date:null});
+
+  // auto-generate receipt
+  const recNum=await nextNum('receipts','num','REC');
+  await ins('receipts',{num:recNum,invoice_num:inv.num,invoice_id:id,client_id:inv.client_id,date:todate(),amount:amt,type:newStatus==='paid'?'full':type,notes:type==='deposit'?'50% deposit received. Balance due on completion.':'Payment received. Thank you!'});
+
+  alert(`Payment of ${fmt(amt)} recorded!\nReceipt ${recNum} auto-generated.\nTransaction added to cash flow.`);
   renderInvoices();
 }
 
-// ============================================================
-// RECEIPTS
-// ============================================================
-function renderReceipts() {
-  const recs = DB.get('receipts');
-  document.getElementById('rec-table').innerHTML = recs.length ? `<table>
+// ── RECEIPTS ──────────────────────────────────────────────
+async function renderReceipts(){
+  const recs=await q('receipts',{order:'id',asc:false});
+  const clients=await q('clients');
+  const cmap=Object.fromEntries(clients.map(c=>[c.id,c.name]));
+  document.getElementById('rec-table').innerHTML=recs.length?`<table>
     <thead><tr><th>Receipt #</th><th>Invoice</th><th>Client</th><th>Date</th><th>Type</th><th style="text-align:right">Amount</th><th>Actions</th></tr></thead>
     <tbody>${recs.map(r=>`<tr>
       <td style="font-family:'DM Mono',monospace;font-size:12px">${r.num}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--blue)">${r.invoice}</td>
-      <td>${clientName(r.client)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--blue)">${r.invoice_num||'—'}</td>
+      <td>${cmap[r.client_id]||'—'}</td>
       <td style="font-size:12px;color:var(--text3)">${r.date}</td>
       <td><span class="badge ${r.type==='full'?'badge-green':r.type==='deposit'?'badge-amber':'badge-blue'}">${r.type}</span></td>
       <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(r.amount)}</td>
-      <td><button class="btn btn-sm btn-ghost" onclick="previewReceipt(${r.id})">Preview</button></td>
-    </tr>`).join('')}</tbody></table>` : '<div class="empty"><p>No receipts yet. Receipts are auto-generated when you record payment on an invoice.</p></div>';
+      <td><button class="btn btn-sm btn-ghost" onclick="previewReceipt(${r.id})">Preview / PDF</button></td>
+    </tr>`).join('')}</tbody></table>`:'<div class="empty"><p>Receipts are auto-generated when you record payment on an invoice.</p></div>';
 }
-function openReceiptModal() { alert('To create a receipt, go to Invoices and click "Record payment" on an invoice. Receipts are auto-generated for you!'); }
 
-// ============================================================
-// DOCUMENT PREVIEW & PDF
-// ============================================================
-let currentPreview = '';
+// ── DOCUMENT PREVIEW & PDF ────────────────────────────────
+let currentPreviewHTML='';
 
-function previewDoc(type, id) {
-  const doc = DB.get(type==='quotation'?'quotations':'invoices').find(d=>d.id===id);
-  if(!doc) return;
-  const client = DB.get('clients').find(c=>c.id===doc.client);
-  const {sub, sstAmt, total} = calcDocTotal(doc.lines, doc.sst);
-  const isQuote = type==='quotation';
-  const isPaid = doc.status==='paid';
+async function previewDoc(type,id){
+  const col=type==='quotation'?'quotations':'invoices';
+  const docs=await q(col,{eq:{id}});
+  if(!docs.length)return;
+  const doc=docs[0];
+  const clients=await q('clients',{eq:{id:doc.client_id}});
+  const client=clients[0]||{};
+  const {sub,sstAmt,total}=calcTotal(doc.lines,doc.sst);
+  const isQuote=type==='quotation';
+  const isPaid=doc.status==='paid';
 
-  currentPreview = `
-    <div class="doc-preview" id="print-area">
-      <div class="doc-header">
-        <div>
-          <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" class="doc-logo" alt="Alpha Plumbing"><br>
-          <div style="margin-top:8px;font-size:12px;color:#6b6860;line-height:1.7">
-            Alpha Plumbing & Electrical Services<br>
-            +60 17-644 9397<br>
-            info@alphaplumbing.com.my<br>
-            Kuala Lumpur, Malaysia
-          </div>
-        </div>
-        <div class="doc-info">
-          <div class="doc-num">${doc.num}</div>
-          <div class="doc-meta">${isQuote?'QUOTATION':'INVOICE'}</div>
-          <div class="doc-meta">Date: ${doc.date}</div>
-          <div class="doc-meta">${isQuote?'Valid until':'Due'}: ${doc.due}</div>
-          ${isPaid?'<div class="doc-stamp">PAID</div>':''}
+  currentPreviewHTML=`<div class="doc-preview" id="print-area">
+    <div class="doc-header">
+      <div>
+        <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" class="doc-logo" alt="Alpha Plumbing">
+        <div style="margin-top:8px;font-size:12px;color:#6b6860;line-height:1.8">
+          <strong>Alpha Plumbing & Electrical Services</strong><br>
+          Tel: +60 17-644 9397<br>
+          Email: info@alphaplumbing.com.my<br>
+          Kuala Lumpur, Malaysia
         </div>
       </div>
-      <div class="doc-parties">
-        <div>
-          <div class="doc-label">From</div>
-          <div class="doc-name">Alpha Plumbing & Electrical Services</div>
-          <div class="doc-addr">Lim (PMP® Certified)<br>Kuala Lumpur, Malaysia</div>
-        </div>
-        <div>
-          <div class="doc-label">Bill to</div>
-          <div class="doc-name">${client?client.name:'—'}</div>
-          <div class="doc-addr">${client?client.addr:''}<br>${client?client.phone:''}</div>
-        </div>
-      </div>
-      <div style="font-weight:600;margin-bottom:12px">${doc.job}</div>
-      <table>
-        <thead><tr><th style="text-align:left">Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${doc.lines.map(l=>`<tr><td>${l.desc}</td><td style="text-align:center">${l.qty}</td><td style="text-align:right">RM ${fmtNum(l.unit)}</td><td style="text-align:right">RM ${fmtNum(l.qty*l.unit)}</td></tr>`).join('')}</tbody>
-      </table>
-      <div class="doc-totals">
-        <table>
-          <tr><td>Subtotal</td><td style="text-align:right">RM ${fmtNum(sub)}</td></tr>
-          ${doc.sst==='yes'?`<tr><td>SST (6%)</td><td style="text-align:right">RM ${fmtNum(sstAmt)}</td></tr>`:''}
-          <tr class="doc-total-final"><td><strong>Total</strong></td><td style="text-align:right"><strong>RM ${fmtNum(total)}</strong></td></tr>
-        </table>
-      </div>
-      <div class="doc-footer">
-        <div class="doc-terms">${doc.notes}</div>
-        <div style="margin-top:12px">Thank you for choosing Alpha Plumbing & Electrical Services.</div>
+      <div class="doc-info">
+        <div class="doc-num">${doc.num}</div>
+        <div class="doc-meta">${isQuote?'QUOTATION':'TAX INVOICE'}</div>
+        <div class="doc-meta">Date: ${doc.date}</div>
+        <div class="doc-meta">${isQuote?'Valid until':'Due date'}: ${doc.due_date||'—'}</div>
+        ${isPaid?'<div class="doc-stamp" style="margin-top:8px">PAID</div>':''}
       </div>
     </div>
-  `;
-  document.getElementById('preview-content').innerHTML = currentPreview;
-  document.getElementById('preview-title').textContent = `${isQuote?'Quotation':'Invoice'} — ${doc.num}`;
+    <div class="doc-parties">
+      <div>
+        <div class="doc-label">From</div>
+        <div class="doc-name">Alpha Plumbing & Electrical Services</div>
+        <div class="doc-addr">Lim (PMP® Certified)<br>Kuala Lumpur, Malaysia<br>+60 17-644 9397</div>
+      </div>
+      <div>
+        <div class="doc-label">Bill to</div>
+        <div class="doc-name">${client.name||'—'}</div>
+        <div class="doc-addr">${client.addr||''}<br>${client.phone||''}<br>${client.email||''}</div>
+      </div>
+    </div>
+    <div style="font-weight:600;margin-bottom:14px;font-size:14px">${doc.job||''}</div>
+    <table>
+      <thead><tr><th style="text-align:left;width:50%">Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>${(doc.lines||[]).map(l=>`<tr><td>${escHtml(l.desc||'')}</td><td style="text-align:center">${l.qty}</td><td style="text-align:right">RM ${fmtNum(l.unit)}</td><td style="text-align:right">RM ${fmtNum((l.qty||0)*(l.unit||0))}</td></tr>`).join('')}</tbody>
+    </table>
+    <div class="doc-totals">
+      <table>
+        <tr><td>Subtotal</td><td style="text-align:right">RM ${fmtNum(sub)}</td></tr>
+        ${doc.sst==='yes'?`<tr><td>SST (6%)</td><td style="text-align:right">RM ${fmtNum(sstAmt)}</td></tr>`:''}
+        <tr class="doc-total-final"><td><strong>Total</strong></td><td style="text-align:right"><strong>RM ${fmtNum(total)}</strong></td></tr>
+        ${!isQuote&&(parseFloat(doc.paid_deposit)||0)>0?`<tr><td style="color:#0e7f5a">Deposit paid</td><td style="text-align:right;color:#0e7f5a">- RM ${fmtNum(doc.paid_deposit)}</td></tr>`:''}
+        ${!isQuote&&(parseFloat(doc.paid_deposit)||0)>0?`<tr><td><strong>Balance due</strong></td><td style="text-align:right"><strong>RM ${fmtNum(total-(parseFloat(doc.paid_deposit)||0)-(parseFloat(doc.paid_balance)||0))}</strong></td></tr>`:''}
+      </table>
+    </div>
+    <div class="doc-footer">
+      <div class="doc-terms">${doc.notes||''}</div>
+      <div style="margin-top:16px">Thank you for choosing Alpha Plumbing & Electrical Services.</div>
+    </div>
+  </div>`;
+
+  document.getElementById('preview-content').innerHTML=currentPreviewHTML;
+  document.getElementById('preview-title').textContent=`${isQuote?'Quotation':'Invoice'} — ${doc.num}`;
   document.getElementById('previewModal').classList.add('open');
 }
 
-function previewReceipt(id) {
-  const r = DB.get('receipts').find(r=>r.id===id);
-  if(!r) return;
-  const client = DB.get('clients').find(c=>c.id===r.client);
-  const inv = DB.get('invoices').find(i=>i.num===r.invoice);
+async function previewReceipt(id){
+  const recs=await q('receipts',{eq:{id}});
+  if(!recs.length)return;
+  const r=recs[0];
+  const clients=await q('clients',{eq:{id:r.client_id}});
+  const client=clients[0]||{};
+  const invs=await q('invoices',{eq:{id:r.invoice_id}});
+  const inv=invs[0]||{};
 
-  currentPreview = `
-    <div class="doc-preview" id="print-area">
-      <div class="doc-header">
-        <div>
-          <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" class="doc-logo" alt="Alpha Plumbing"><br>
-          <div style="margin-top:8px;font-size:12px;color:#6b6860;line-height:1.7">
-            Alpha Plumbing & Electrical Services<br>
-            +60 17-644 9397<br>
-            info@alphaplumbing.com.my
-          </div>
-        </div>
-        <div class="doc-info">
-          <div class="doc-num">${r.num}</div>
-          <div class="doc-meta">OFFICIAL RECEIPT</div>
-          <div class="doc-meta">Date: ${r.date}</div>
-          <div class="doc-stamp">RECEIVED</div>
+  currentPreviewHTML=`<div class="doc-preview" id="print-area">
+    <div class="doc-header">
+      <div>
+        <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" class="doc-logo" alt="Alpha Plumbing">
+        <div style="margin-top:8px;font-size:12px;color:#6b6860;line-height:1.8">
+          <strong>Alpha Plumbing & Electrical Services</strong><br>
+          Tel: +60 17-644 9397<br>
+          Email: info@alphaplumbing.com.my
         </div>
       </div>
-      <div class="doc-parties">
-        <div>
-          <div class="doc-label">Received from</div>
-          <div class="doc-name">${client?client.name:'—'}</div>
-          <div class="doc-addr">${client?client.phone:''}</div>
-        </div>
-        <div>
-          <div class="doc-label">Reference</div>
-          <div class="doc-name" style="font-family:'DM Mono',monospace;font-size:13px">${r.invoice}</div>
-          <div class="doc-addr">${inv?inv.job:''}</div>
-        </div>
-      </div>
-      <table>
-        <thead><tr><th style="text-align:left">Description</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>
-          <tr><td>Payment received — ${r.type==='deposit'?'50% deposit':r.type==='balance'?'Balance payment':'Full payment'}</td><td style="text-align:right;font-weight:700;font-size:16px">RM ${fmtNum(r.amount)}</td></tr>
-        </tbody>
-      </table>
-      <div class="doc-footer">
-        <div>${r.notes}</div>
-        <div style="margin-top:20px;border-top:1px solid #e2e0d8;padding-top:12px;display:flex;justify-content:space-between">
-          <span>Authorised signature: _______________________</span>
-          <span>Date: ${r.date}</span>
-        </div>
+      <div class="doc-info">
+        <div class="doc-num">${r.num}</div>
+        <div class="doc-meta">OFFICIAL RECEIPT</div>
+        <div class="doc-meta">Date: ${r.date}</div>
+        <div class="doc-stamp" style="margin-top:8px">RECEIVED</div>
       </div>
     </div>
-  `;
-  document.getElementById('preview-content').innerHTML = currentPreview;
-  document.getElementById('preview-title').textContent = `Receipt — ${r.num}`;
+    <div class="doc-parties">
+      <div><div class="doc-label">Received from</div><div class="doc-name">${client.name||'—'}</div><div class="doc-addr">${client.phone||''}<br>${client.addr||''}</div></div>
+      <div><div class="doc-label">Reference</div><div class="doc-name" style="font-family:'DM Mono',monospace">${r.invoice_num||'—'}</div><div class="doc-addr">${inv.job||''}</div></div>
+    </div>
+    <table>
+      <thead><tr><th style="text-align:left">Description</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody><tr><td>${r.type==='deposit'?'50% deposit received':r.type==='balance'?'Balance payment received':'Full payment received'}</td><td style="text-align:right;font-weight:700;font-size:16px">RM ${fmtNum(r.amount)}</td></tr></tbody>
+    </table>
+    <div class="doc-footer">
+      <div>${r.notes||''}</div>
+      <div style="margin-top:24px;display:flex;justify-content:space-between;border-top:1px solid #e2e0d8;padding-top:16px">
+        <span>Authorised signature: _______________________</span>
+        <span>Date: ${r.date}</span>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('preview-content').innerHTML=currentPreviewHTML;
+  document.getElementById('preview-title').textContent=`Receipt — ${r.num}`;
   document.getElementById('previewModal').classList.add('open');
 }
 
-function downloadPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p','mm','a4');
-  const el = document.getElementById('print-area');
-  doc.html(el, {
-    callback: (d) => d.save('document.pdf'),
-    x: 10, y: 10, width: 190, windowWidth: 680
-  });
+function downloadPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF('p','mm','a4');
+  const el=document.getElementById('print-area');
+  doc.html(el,{callback:d=>d.save('alpha-document.pdf'),x:10,y:10,width:190,windowWidth:700});
 }
 
-// ============================================================
-// CLIENTS
-// ============================================================
-function renderClients() {
-  const clients = DB.get('clients');
-  const invs = DB.get('invoices');
-  document.getElementById('client-table').innerHTML = clients.length ? `<table>
-    <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Invoices</th><th>Outstanding</th><th>Actions</th></tr></thead>
+// ── CLIENTS ───────────────────────────────────────────────
+async function renderClients(){
+  const [clients,invs]=await Promise.all([q('clients',{order:'name'}),q('invoices')]);
+  document.getElementById('client-table').innerHTML=clients.length?`<table>
+    <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Area</th><th>Invoices</th><th>Outstanding</th><th>Actions</th></tr></thead>
     <tbody>${clients.map(c=>{
-      const cInvs = invs.filter(i=>i.client===c.id);
-      const outstanding = cInvs.filter(i=>i.status!=='paid').reduce((s,i)=>{
-        const {total}=calcDocTotal(i.lines,i.sst);
-        return s+total-(i.paid_deposit||0)-(i.paid_balance||0);
-      },0);
+      const cInvs=invs.filter(i=>i.client_id===c.id);
+      const outstanding=cInvs.filter(i=>i.status!=='paid').reduce((s,i)=>{const{total}=calcTotal(i.lines,i.sst);return s+total-(parseFloat(i.paid_deposit)||0)-(parseFloat(i.paid_balance)||0);},0);
       return `<tr>
         <td><strong>${c.name}</strong>${c.notes?`<br><span style="font-size:11px;color:var(--text3)">${c.notes}</span>`:''}</td>
-        <td style="font-size:13px">${c.phone||'—'}</td>
+        <td>${c.phone||'—'}</td>
         <td style="font-size:12px;color:var(--blue)">${c.email||'—'}</td>
-        <td style="font-family:'DM Mono',monospace">${cInvs.length}</td>
+        <td style="font-size:12px;color:var(--text2)">${c.addr||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;text-align:center">${cInvs.length}</td>
         <td style="font-family:'DM Mono',monospace;color:${outstanding>0?'var(--red)':'var(--text2)'}">${fmt(outstanding)}</td>
-        <td>
-          <button class="btn btn-sm btn-ghost" onclick="openDocModal('invoice');setTimeout(()=>document.getElementById('doc-client').value=${c.id},100)">New invoice</button>
+        <td><div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-ghost" onclick="openDocModal('invoice');setTimeout(()=>{document.getElementById('doc-client').value='${c.id}'},300)">New invoice</button>
           <button class="btn btn-sm btn-ghost btn-danger" onclick="deleteClient(${c.id})">Remove</button>
-        </td>
+        </div></td>
       </tr>`;
-    }).join('')}</tbody></table>` : '<div class="empty"><p>No clients yet.</p></div>';
+    }).join('')}</tbody></table>`:'<div class="empty"><p>No clients yet. Click "+ Add Client" to add your first client.</p></div>';
 }
-function openClientModal(id) {
-  document.getElementById('cl-name').value='';document.getElementById('cl-phone').value='';
-  document.getElementById('cl-email').value='';document.getElementById('cl-addr').value='';document.getElementById('cl-notes').value='';
+function openClientModal(){
+  ['cl-name','cl-phone','cl-email','cl-addr','cl-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('clientModal').classList.add('open');
 }
-function saveClient() {
-  const name = document.getElementById('cl-name').value.trim();
-  if(!name) return alert('Name is required.');
-  const clients = DB.get('clients');
-  clients.push({id:nextId(clients),name,phone:document.getElementById('cl-phone').value,email:document.getElementById('cl-email').value,addr:document.getElementById('cl-addr').value,notes:document.getElementById('cl-notes').value});
-  DB.set('clients',clients);
+async function saveClient(){
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name)return alert('Name is required.');
+  await ins('clients',{name,phone:document.getElementById('cl-phone').value,email:document.getElementById('cl-email').value,addr:document.getElementById('cl-addr').value,notes:document.getElementById('cl-notes').value});
   document.getElementById('clientModal').classList.remove('open');
   renderClients();
 }
-function deleteClient(id) {
-  if(!confirm('Delete this client?')) return;
-  DB.set('clients',DB.get('clients').filter(c=>c.id!==id));
-  renderClients();
-}
+async function deleteClient(id){if(!confirm('Delete this client?'))return;await del('clients',id);renderClients();}
 
-// ============================================================
-// JOBS
-// ============================================================
-function renderJobs() {
-  const jobs = DB.get('jobs');
-  const staffList = DB.get('staff');
-  document.getElementById('jobs-table').innerHTML = jobs.length ? `<table>
-    <thead><tr><th>Job</th><th>Client</th><th>Staff</th><th>Start</th><th>End</th><th style="text-align:right">Value</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${jobs.map(j=>{
-      const assignedStaff = (j.staff||[]).map(sid=>staffList.find(s=>s.id==sid)?.name||'').filter(Boolean).join(', ');
-      return `<tr>
-        <td><strong>${j.title}</strong>${j.invoice?`<br><span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--blue)">${j.invoice}</span>`:''}</td>
-        <td>${clientName(j.client)}</td>
-        <td style="font-size:12px;color:var(--text2)">${assignedStaff||'—'}</td>
-        <td style="font-size:12px;color:var(--text3)">${j.start}</td>
-        <td style="font-size:12px;color:var(--text3)">${j.end||'—'}</td>
-        <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600">${j.value?fmt(j.value):'—'}</td>
-        <td>
-          <select class="badge" style="border:none;cursor:pointer;font-size:11px" onchange="updateJobStatus(${j.id},this.value)">
-            <option ${j.status==='pending'?'selected':''} value="pending">Pending</option>
-            <option ${j.status==='active'?'selected':''} value="active">Active</option>
-            <option ${j.status==='completed'?'selected':''} value="completed">Completed</option>
-            <option ${j.status==='cancelled'?'selected':''} value="cancelled">Cancelled</option>
-          </select>
-        </td>
-        <td><button class="btn btn-sm btn-ghost btn-danger" onclick="deleteJob(${j.id})">Remove</button></td>
-      </tr>`;
-    }).join('')}</tbody></table>` : '<div class="empty"><p>No jobs yet.</p></div>';
+// ── JOBS ──────────────────────────────────────────────────
+async function renderJobs(){
+  const [jobs,clients,staffList]=await Promise.all([q('jobs',{order:'id',asc:false}),q('clients'),q('staff')]);
+  const cmap=Object.fromEntries(clients.map(c=>[c.id,c.name]));
+  const smap=Object.fromEntries(staffList.map(s=>[s.id,s.name]));
+  const jobStaff=await q('job_staff');
+  const jsmap={};
+  jobStaff.forEach(js=>{if(!jsmap[js.job_id])jsmap[js.job_id]=[];jsmap[js.job_id].push(smap[js.staff_id]||'');});
+
+  document.getElementById('jobs-table').innerHTML=jobs.length?`<table>
+    <thead><tr><th>Job</th><th>Client</th><th>Staff</th><th>Start</th><th>End</th><th style="text-align:right">Value</th><th>Status</th><th></th></tr></thead>
+    <tbody>${jobs.map(j=>`<tr>
+      <td><strong>${j.title}</strong>${j.invoice_num?`<br><span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--blue)">${j.invoice_num}</span>`:''}</td>
+      <td>${cmap[j.client_id]||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${(jsmap[j.id]||[]).join(', ')||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${j.start_date||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${j.end_date||'—'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600">${j.value?fmt(j.value):'—'}</td>
+      <td>
+        <select class="badge" style="border:none;cursor:pointer;font-size:11px;background:none" onchange="updateDocStatus('jobs',${j.id},this.value)">
+          <option${j.status==='pending'?' selected':''} value="pending">Pending</option>
+          <option${j.status==='active'?' selected':''} value="active">Active</option>
+          <option${j.status==='completed'?' selected':''} value="completed">Completed</option>
+          <option${j.status==='cancelled'?' selected':''} value="cancelled">Cancelled</option>
+        </select>
+      </td>
+      <td><button class="btn btn-sm btn-ghost btn-danger" onclick="deleteJob(${j.id})">✕</button></td>
+    </tr>`).join('')}</tbody></table>`:'<div class="empty"><p>No jobs yet. Click "+ Add Job" to track your first job.</p></div>';
 }
-function openJobModal() {
-  const clients = DB.get('clients');
-  const staffList = DB.get('staff');
-  document.getElementById('jb-client').innerHTML = '<option value="">Select...</option>'+clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  document.getElementById('jb-staff').innerHTML = staffList.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  document.getElementById('jb-start').value = today();
-  document.getElementById('jb-title').value='';document.getElementById('jb-value').value='';document.getElementById('jb-notes').value='';document.getElementById('jb-invoice').value='';
+async function openJobModal(){
+  const [clients,staffList]=await Promise.all([q('clients',{order:'name'}),q('staff',{order:'name'})]);
+  document.getElementById('jb-client').innerHTML='<option value="">Select...</option>'+clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('jb-staff').innerHTML=staffList.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  ['jb-title','jb-value','jb-notes','jb-invoice','jb-end'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('jb-start').value=todate();
+  document.getElementById('jb-status').value='pending';
   document.getElementById('jobModal').classList.add('open');
 }
-function saveJob() {
-  const title = document.getElementById('jb-title').value.trim();
-  if(!title) return alert('Job title required.');
-  const jobs = DB.get('jobs');
-  const staffSel = document.getElementById('jb-staff');
-  const staff = [...staffSel.options].filter(o=>o.selected).map(o=>parseInt(o.value));
-  jobs.push({id:nextId(jobs),title,client:parseInt(document.getElementById('jb-client').value)||null,status:document.getElementById('jb-status').value,start:document.getElementById('jb-start').value,end:document.getElementById('jb-end').value,value:parseFloat(document.getElementById('jb-value').value)||0,staff,invoice:document.getElementById('jb-invoice').value,notes:document.getElementById('jb-notes').value});
-  DB.set('jobs',jobs);
-  document.getElementById('jobModal').classList.remove('open');
-  renderJobs();
+async function saveJob(){
+  const title=document.getElementById('jb-title').value.trim();
+  if(!title)return alert('Job title required.');
+  const row={title,client_id:parseInt(document.getElementById('jb-client').value)||null,status:document.getElementById('jb-status').value,start_date:document.getElementById('jb-start').value||null,end_date:document.getElementById('jb-end').value||null,value:parseFloat(document.getElementById('jb-value').value)||0,invoice_num:document.getElementById('jb-invoice').value||null,notes:document.getElementById('jb-notes').value||null};
+  const saved=await ins('jobs',row);
+  if(saved){
+    const staffSel=document.getElementById('jb-staff');
+    const selected=[...staffSel.options].filter(o=>o.selected).map(o=>parseInt(o.value)).filter(Boolean);
+    await Promise.all(selected.map(sid=>ins('job_staff',{job_id:saved.id,staff_id:sid})));
+    document.getElementById('jobModal').classList.remove('open');
+    renderJobs();
+  }
 }
-function updateJobStatus(id,status) {
-  const jobs=DB.get('jobs');const j=jobs.find(j=>j.id===id);if(j){j.status=status;DB.set('jobs',jobs);}
-}
-function deleteJob(id) {
-  if(!confirm('Delete this job?')) return;
-  DB.set('jobs',DB.get('jobs').filter(j=>j.id!==id));
-  renderJobs();
-}
+async function deleteJob(id){if(!confirm('Delete this job?'))return;await del('jobs',id);renderJobs();}
 
-// ============================================================
-// STAFF
-// ============================================================
-function renderStaff() {
-  const staffList = DB.get('staff');
-  const jobs = DB.get('jobs');
-  const grid = document.getElementById('staff-grid');
-  if(!staffList.length) { grid.innerHTML='<div class="empty"><p>No staff yet.</p></div>'; return; }
-  grid.innerHTML = staffList.map(s=>{
-    const initials = s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    const activeJobs = jobs.filter(j=>j.staff&&j.staff.includes(s.id)&&j.status==='active').length;
-    const typeBadge = {fulltime:'badge-green',parttime:'badge-amber',contract:'badge-blue'}[s.type]||'badge-gray';
+// ── STAFF ─────────────────────────────────────────────────
+async function renderStaff(){
+  const [staffList,jobs,jobStaff]=await Promise.all([q('staff',{order:'name'}),q('jobs'),q('job_staff')]);
+  const grid=document.getElementById('staff-grid');
+  if(!staffList.length){grid.innerHTML='<div class="empty"><p>No staff yet. Click "+ Add Staff" to add a team member.</p></div>';return;}
+  grid.innerHTML=staffList.map(s=>{
+    const initials=s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const activeJobs=jobStaff.filter(js=>js.staff_id===s.id).map(js=>jobs.find(j=>j.id===js.job_id)).filter(j=>j&&j.status==='active').length;
+    const typeBadge={fulltime:'badge-green',parttime:'badge-amber',contract:'badge-blue'}[s.type]||'badge-gray';
     return `<div class="staff-card">
       <div class="staff-avatar">${initials}</div>
       <div style="flex:1">
         <div class="staff-name">${s.name}</div>
-        <div class="staff-role">${s.role}</div>
-        <div class="staff-meta" style="margin-top:6px">
-          <span class="badge ${typeBadge}" style="font-size:10px">${s.type}</span>
-          ${s.salary?`<span style="margin-left:6px;font-size:11px;color:var(--text3)">RM ${s.salary.toLocaleString()}/mo</span>`:''}
+        <div class="staff-role">${s.role||''}</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+          <span class="badge ${typeBadge}" style="font-size:10px">${s.type||''}</span>
+          ${s.salary?`<span style="font-size:11px;color:var(--text3)">RM ${parseFloat(s.salary).toLocaleString()}/mo</span>`:''}
         </div>
-        <div class="staff-meta">${s.phone||''}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">${activeJobs} active job${activeJobs!==1?'s':''}</div>
+        <div class="staff-meta" style="margin-top:4px">${s.phone||''}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${activeJobs} active job${activeJobs!==1?'s':''}</div>
       </div>
       <button class="btn btn-sm btn-ghost btn-danger" onclick="deleteStaff(${s.id})" style="align-self:flex-start">✕</button>
     </div>`;
   }).join('');
 }
-function openStaffModal() {
-  document.getElementById('sf-name').value='';document.getElementById('sf-phone').value='';
-  document.getElementById('sf-ic').value='';document.getElementById('sf-salary').value='';
-  document.getElementById('sf-start').value=today();document.getElementById('sf-notes').value='';
+function openStaffModal(){
+  ['sf-name','sf-phone','sf-ic','sf-salary','sf-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sf-start').value=todate();
   document.getElementById('staffModal').classList.add('open');
 }
-function saveStaff() {
+async function saveStaff(){
   const name=document.getElementById('sf-name').value.trim();
-  if(!name) return alert('Name required.');
-  const staffList=DB.get('staff');
-  staffList.push({id:nextId(staffList),name,role:document.getElementById('sf-role').value,type:document.getElementById('sf-type').value,phone:document.getElementById('sf-phone').value,ic:document.getElementById('sf-ic').value,salary:parseFloat(document.getElementById('sf-salary').value)||0,start:document.getElementById('sf-start').value,notes:document.getElementById('sf-notes').value});
-  DB.set('staff',staffList);
+  if(!name)return alert('Name required.');
+  await ins('staff',{name,role:document.getElementById('sf-role').value,type:document.getElementById('sf-type').value,phone:document.getElementById('sf-phone').value,ic:document.getElementById('sf-ic').value,salary:parseFloat(document.getElementById('sf-salary').value)||0,start_date:document.getElementById('sf-start').value||null,notes:document.getElementById('sf-notes').value||null});
   document.getElementById('staffModal').classList.remove('open');
   renderStaff();
 }
-function deleteStaff(id) {
-  if(!confirm('Remove this staff member?')) return;
-  DB.set('staff',DB.get('staff').filter(s=>s.id!==id));
-  renderStaff();
-}
+async function deleteStaff(id){if(!confirm('Remove this staff member?'))return;await del('staff',id);renderStaff();}
 
-// ============================================================
-// REPORTS
-// ============================================================
-function renderReports() {
-  const months = allMonths();
-  const mSel = document.getElementById('r-month');
-  const curM = mSel.value || thisMonth();
-  mSel.innerHTML = months.map(m=>`<option value="${m}" ${m===curM?'selected':''}>${m}</option>`).join('');
+// ── REPORTS ───────────────────────────────────────────────
+async function renderReports(){
+  const txs=await q('transactions',{order:'date',asc:false});
+  const months=[...new Set(txs.map(t=>t.date&&t.date.slice(0,7)).filter(Boolean))].sort().reverse();
+  if(!months.length)months.push(thisMonth());
+  const mSel=document.getElementById('r-month');
+  const curM=mSel.value||thisMonth();
+  mSel.innerHTML=months.map(m=>`<option value="${m}"${m===curM?' selected':''}>${m}</option>`).join('');
+  const filtered=txs.filter(t=>t.date&&t.date.startsWith(curM));
+  const inc=filtered.filter(t=>t.type==='in');
+  const exp=filtered.filter(t=>t.type==='out');
+  const totalIn=inc.reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const totalOut=exp.reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const net=totalIn-totalOut;
 
-  const txs = DB.get('transactions').filter(t=>t.date.startsWith(curM));
-  const inc = txs.filter(t=>t.type==='in');
-  const exp = txs.filter(t=>t.type==='out');
-  const totalIn = inc.reduce((s,t)=>s+t.amount,0);
-  const totalOut = exp.reduce((s,t)=>s+t.amount,0);
-  const net = totalIn - totalOut;
-
-  document.getElementById('r-metrics').innerHTML = `
+  document.getElementById('r-metrics').innerHTML=`
     <div class="metric"><div class="metric-label">Total income</div><div class="metric-value green">${fmt(totalIn)}</div></div>
     <div class="metric"><div class="metric-label">Total expenses</div><div class="metric-value red">${fmt(totalOut)}</div></div>
     <div class="metric"><div class="metric-label">Net profit / (loss)</div><div class="metric-value ${net>=0?'green':'red'}">${fmt(net)}</div></div>
-    <div class="metric"><div class="metric-label">Profit margin</div><div class="metric-value ${net>=0?'blue':'red'}">${totalIn?Math.round(net/totalIn*100):0}%</div></div>
-  `;
+    <div class="metric"><div class="metric-label">Profit margin</div><div class="metric-value ${net>=0?'blue':'red'}">${totalIn?Math.round(net/totalIn*100):0}%</div></div>`;
 
-  function groupByCat(arr) {
-    const g={};arr.forEach(t=>g[t.cat]=(g[t.cat]||0)+t.amount);return g;
-  }
-  function catTable(g,total) {
+  function groupByCat(arr){const g={};arr.forEach(t=>g[t.category]=(g[t.category]||0)+parseFloat(t.amount||0));return g;}
+  function catTable(g,total){
     const rows=Object.entries(g).sort((a,b)=>b[1]-a[1]);
-    if(!rows.length) return '<div class="empty"><p>No entries</p></div>';
+    if(!rows.length)return '<div class="empty"><p>No entries</p></div>';
     return `<table><thead><tr><th>Category</th><th style="text-align:right">Amount</th><th style="text-align:right">%</th></tr></thead><tbody>
-    ${rows.map(([c,v])=>`<tr><td>${c}</td><td style="text-align:right;font-family:'DM Mono',monospace">${fmt(v)}</td><td style="text-align:right;color:var(--text3)">${total?Math.round(v/total*100):0}%</td></tr>`).join('')}
+    ${rows.map(([c,v])=>`<tr><td>${c||'Uncategorised'}</td><td style="text-align:right;font-family:'DM Mono',monospace">${fmt(v)}</td><td style="text-align:right;color:var(--text3)">${total?Math.round(v/total*100):0}%</td></tr>`).join('')}
     <tr style="font-weight:600;border-top:2px solid var(--border2)"><td>Total</td><td style="text-align:right;font-family:'DM Mono',monospace">${fmt(total)}</td><td></td></tr>
     </tbody></table>`;
   }
-
-  document.getElementById('r-income').innerHTML = catTable(groupByCat(inc),totalIn);
-  document.getElementById('r-expense').innerHTML = catTable(groupByCat(exp),totalOut);
-  document.getElementById('r-summary').innerHTML = `<table>
-    <tbody>
-      <tr><td>Total income</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green)">${fmt(totalIn)}</td></tr>
-      <tr><td>Total expenses</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--red)">${fmt(totalOut)}</td></tr>
-      <tr style="font-size:16px;font-weight:700;border-top:2px solid var(--border2)"><td>Net profit / (loss)</td><td style="text-align:right;font-family:'DM Mono',monospace;color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</td></tr>
-    </tbody>
-  </table>`;
+  document.getElementById('r-income').innerHTML=catTable(groupByCat(inc),totalIn);
+  document.getElementById('r-expense').innerHTML=catTable(groupByCat(exp),totalOut);
+  document.getElementById('r-summary').innerHTML=`<table><tbody>
+    <tr><td>Total income</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green)">${fmt(totalIn)}</td></tr>
+    <tr><td>Total expenses</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--red)">${fmt(totalOut)}</td></tr>
+    <tr style="font-size:16px;font-weight:700;border-top:2px solid var(--border2)"><td>Net profit / (loss)</td><td style="text-align:right;font-family:'DM Mono',monospace;color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</td></tr>
+  </tbody></table>`;
 }
 
-// ============================================================
-// INIT
-// ============================================================
-initSupabase();
-seedDemo();
+// ── INIT ──────────────────────────────────────────────────
 renderDashboard();
-document.getElementById('r-month').innerHTML = '';
 </script>
+
 </body>
 </html>
