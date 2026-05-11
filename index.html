@@ -209,7 +209,7 @@
 
   /* ── DASHBOARD SPECIFIC ── */
   .dash-section { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
-  .kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+  .kpi-strip { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 14px; margin-bottom: 24px; }
   .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 4px; }
   .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
   .kpi-icon svg { width: 20px; height: 20px; }
@@ -304,9 +304,13 @@
         <div id="conn-status"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div style="font-size:13px;color:var(--text2)">Showing data for:</div>
-          <select id="dash-month" aria-label="Select dashboard month" onchange="renderDashboard()" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none"></select>
+          <select id="dash-month" onchange="renderDashboard()" aria-label="Select dashboard month" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none"></select>
         </div>
+
+        <!-- KPI strip (6 cards) -->
         <div class="kpi-strip" id="dash-metrics"></div>
+
+        <!-- Charts row 1: quarterly + monthly trend -->
         <div class="grid2" style="margin-bottom:18px">
           <div class="card">
             <div class="card-title">Quarterly overview</div>
@@ -322,23 +326,67 @@
             <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
               <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:3px;border-radius:2px;background:#4f46e5;display:inline-block"></span>Net profit</span>
               <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:3px;border-radius:2px;background:#34d399;display:inline-block"></span>Income</span>
-              <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;border-radius:2px;background:#f97316;display:inline-block;border-top:2px dashed #f97316"></span>Avg net</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;border-radius:2px;background:#f97316;display:inline-block"></span>Avg net</span>
             </div>
             <div style="position:relative;height:200px"><canvas id="annualChart" role="img" aria-label="Monthly income and net profit line chart with average">Monthly trend</canvas></div>
           </div>
         </div>
-        <div class="card" style="margin-bottom:18px">
-          <div class="card-title">Monthly profit margin %</div>
-          <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#7c3aed;display:inline-block"></span>Margin %</span>
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;border-radius:2px;background:#f97316;display:inline-block"></span>Avg margin</span>
+
+        <!-- Charts row 2: margin + income category + month vs last year -->
+        <div class="grid2" style="margin-bottom:18px">
+          <div class="card">
+            <div class="card-title">Monthly profit margin %</div>
+            <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#7c3aed;display:inline-block"></span>Margin %</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;background:#f97316;display:inline-block"></span>Avg margin</span>
+            </div>
+            <div style="position:relative;height:180px"><canvas id="marginChart" role="img" aria-label="Monthly profit margin histogram">Profit margin by month</canvas></div>
           </div>
-          <div style="position:relative;height:180px"><canvas id="marginChart" role="img" aria-label="Monthly profit margin histogram">Profit margin by month</canvas></div>
+          <div class="card">
+            <div class="card-title">Income by category</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text2);flex-wrap:wrap" id="cat-legend"></div>
+            <div style="position:relative;height:180px"><canvas id="catDonutChart" role="img" aria-label="Income breakdown by category donut chart">Income by category</canvas></div>
+          </div>
         </div>
+
+        <!-- Month vs same month last year -->
         <div class="card" style="margin-bottom:18px">
-          <div class="card-title">Recent transactions</div>
-          <div class="table-wrap" id="dash-transactions"></div>
+          <div class="card-title">This month vs same month last year</div>
+          <div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#4f46e5;display:inline-block"></span>This year</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d1d5db;display:inline-block"></span>Last year</span>
+          </div>
+          <div style="position:relative;height:160px"><canvas id="yoyChart" role="img" aria-label="This month vs same month last year comparison">Year on year comparison</canvas></div>
         </div>
+
+        <!-- Insight bar -->
+        <div id="dash-insights" style="margin-bottom:18px"></div>
+
+        <!-- Operational panels row 1: overdue + active jobs -->
+        <div class="grid2" style="margin-bottom:18px">
+          <div class="card">
+            <div class="card-title" style="color:var(--red)">Overdue invoices</div>
+            <div id="dash-overdue"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Active jobs</div>
+            <div id="dash-activejobs"></div>
+          </div>
+        </div>
+
+        <!-- Operational panels row 2: pending quotes + recent transactions -->
+        <div class="grid2" style="margin-bottom:18px">
+          <div class="card">
+            <div class="card-title">Pending quotations</div>
+            <div id="dash-pendingquotes"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent transactions</div>
+            <div class="table-wrap" id="dash-transactions"></div>
+          </div>
+        </div>
+
+        <!-- Bottom: upcoming + recent invoices -->
         <div class="dash-section">
           <div class="card">
             <div class="card-title">Upcoming payments</div>
@@ -350,7 +398,6 @@
           </div>
         </div>
       </div>
-
       <!-- CASH FLOW -->
       <div class="page" id="page-cashflow">
         <div class="metrics" id="cf-metrics"></div>
@@ -708,9 +755,11 @@ function showPage(p) {
 
 // ── DASHBOARD ──────────────────────────────────────────────
 async function renderDashboard() {
-  const [txs, invs] = await Promise.all([
+  const [txs, invs, jobs, quots] = await Promise.all([
     q('transactions',{order:'date',asc:false}),
-    q('invoices',{order:'date',asc:false})
+    q('invoices',{order:'date',asc:false}),
+    q('jobs',{order:'id',asc:false}),
+    q('quotations',{order:'id',asc:false})
   ]);
 
   // Populate month selector
@@ -731,12 +780,21 @@ async function renderDashboard() {
   },0);
   const overdueCount = invs.filter(i=>i.status!=='paid'&&i.due_date&&i.due_date<todate()).length;
 
+  // YTD calculation
+  const curYear = now.slice(0,4);
+  const ytdIn = txs.filter(t=>t.date&&t.date.startsWith(curYear)&&t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const lastYearSameMo = now.slice(0,4)-1+'-'+now.slice(5,7);
+  const lastYearIn = txs.filter(t=>t.date&&t.date.startsWith(lastYearSameMo)&&t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const moChange = lastYearIn>0?Math.round((totalIn-lastYearIn)/lastYearIn*100):null;
+  const activeJobs = jobs.filter(j=>j.status==='active').length;
+
   document.getElementById('dash-metrics').innerHTML = `
     <div class="kpi">
       <div class="kpi-icon" style="background:#ecfdf5"><svg fill="none" stroke="#059669" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
       <div class="kpi-label">This month income</div>
       <div class="kpi-val" style="color:var(--green)">${fmt(totalIn)}</div>
-      <div class="kpi-delta" style="color:var(--text3)">${new Date().toLocaleString('en-MY',{month:'long',year:'numeric'})}</div>
+      <div class="kpi-delta" style="color:${moChange!==null?(moChange>=0?'var(--green)':'var(--red)'):'var(--text3)'}">
+        ${moChange!==null?(moChange>=0?'↑':'↓')+Math.abs(moChange)+'% vs last year':now.slice(0,7)}</div>
     </div>
     <div class="kpi">
       <div class="kpi-icon" style="background:#fef2f2"><svg fill="none" stroke="#dc2626" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
@@ -754,7 +812,19 @@ async function renderDashboard() {
       <div class="kpi-icon" style="background:#eef2ff"><svg fill="none" stroke="#4f46e5" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
       <div class="kpi-label">Outstanding</div>
       <div class="kpi-val" style="color:var(--blue)">${fmt(outstanding)}</div>
-      <div class="kpi-delta" style="color:${overdueCount>0?'var(--red)':'var(--text3)'}">${overdueCount>0?overdueCount+' invoice'+( overdueCount>1?'s':'')+' overdue':'All invoices on track'}</div>
+      <div class="kpi-delta" style="color:${overdueCount>0?'var(--red)':'var(--text3)'}">${overdueCount>0?overdueCount+' overdue':'All on track'}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:#f0fdf4"><svg fill="none" stroke="#16a34a" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10"/></svg></div>
+      <div class="kpi-label">Year-to-date revenue</div>
+      <div class="kpi-val" style="color:#16a34a">${fmt(ytdIn)}</div>
+      <div class="kpi-delta" style="color:var(--text3)">${curYear} total so far</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:#fef9c3"><svg fill="none" stroke="#ca8a04" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+      <div class="kpi-label">Active jobs</div>
+      <div class="kpi-val" style="color:#ca8a04">${activeJobs}</div>
+      <div class="kpi-delta" style="color:var(--text3)">Currently in progress</div>
     </div>`;
 
   const upcoming = txs.filter(t=>t.scheduled_date&&t.scheduled_date>todate()).sort((a,b)=>a.scheduled_date.localeCompare(b.scheduled_date)).slice(0,5);
@@ -781,6 +851,72 @@ async function renderDashboard() {
     </tr>`).join('')}</tbody></table>` : '<div class="empty"><p>No transactions yet</p></div>';
 
   renderDashboardCharts(txs);
+
+  // ── OVERDUE INVOICES ──
+  const clients = await q('clients');
+  const cmap = Object.fromEntries(clients.map(c=>[c.id,c.name]));
+  const overdueInvs = invs.filter(i=>i.status!=='paid'&&i.due_date&&i.due_date<todate());
+  document.getElementById('dash-overdue').innerHTML = overdueInvs.length ? `
+    <table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Client</th><th style="text-align:right;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Amount</th><th style="text-align:right;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Days</th></tr></thead>
+      <tbody>${overdueInvs.map(inv=>{
+        const {total}=calcTotal(inv.lines,inv.sst);
+        const paid=(parseFloat(inv.paid_deposit)||0)+(parseFloat(inv.paid_balance)||0);
+        const bal=total-paid;
+        const days=Math.floor((new Date()-new Date(inv.due_date))/864e5);
+        return `<tr><td style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-weight:500">${cmap[inv.client_id]||'—'}</div><div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${inv.num}</div></td><td style="text-align:right;padding:8px 0;border-bottom:0.5px solid var(--border);font-weight:600;font-family:'DM Mono',monospace;color:var(--red)">${fmt(bal)}</td><td style="text-align:right;padding:8px 0;border-bottom:0.5px solid var(--border)"><span style="background:#fef2f2;color:#dc2626;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">${days}d</span></td></tr>`;
+      }).join('')}</tbody>
+    </table>` : '<div class="empty"><p style="color:var(--green)">No overdue invoices</p></div>';
+
+  // ── ACTIVE JOBS ──
+  const activeJobsList = jobs.filter(j=>j.status==='active').slice(0,5);
+  document.getElementById('dash-activejobs').innerHTML = activeJobsList.length ? `
+    <table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Job</th><th style="text-align:right;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Value</th><th style="text-align:right;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Days</th></tr></thead>
+      <tbody>${activeJobsList.map(j=>{
+        const days=j.start_date?Math.floor((new Date()-new Date(j.start_date))/864e5):0;
+        return `<tr><td style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-weight:500">${j.title}</div><div style="font-size:11px;color:var(--text3)">${cmap[j.client_id]||'—'}</div></td><td style="text-align:right;padding:8px 0;border-bottom:0.5px solid var(--border);font-weight:600;font-family:'DM Mono',monospace;color:var(--blue)">${j.value?fmt(j.value):'—'}</td><td style="text-align:right;padding:8px 0;border-bottom:0.5px solid var(--border)"><span style="background:#E6F1FB;color:#185FA5;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">${days}d</span></td></tr>`;
+      }).join('')}</tbody>
+    </table>` : '<div class="empty"><p>No active jobs</p></div>';
+
+  // ── PENDING QUOTATIONS ──
+  const pendingQuotes = quots.filter(q2=>q2.status==='draft'||q2.status==='sent').slice(0,5);
+  document.getElementById('dash-pendingquotes').innerHTML = pendingQuotes.length ? `
+    <table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Quote</th><th style="text-align:right;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Amount</th><th style="text-align:right;padding:6px 0;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Status</th></tr></thead>
+      <tbody>${pendingQuotes.map(qt=>{
+        const {total}=calcTotal(qt.lines,qt.sst);
+        const isExpired=qt.due_date&&qt.due_date<todate();
+        return `<tr><td style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-weight:500;font-family:'DM Mono',monospace;font-size:11px">${qt.num}</div><div style="font-size:11px;color:var(--text3)">${cmap[qt.client_id]||'—'}</div></td><td style="text-align:right;padding:8px 0;border-bottom:0.5px solid var(--border);font-weight:600;font-family:'DM Mono',monospace">${fmt(total)}</td><td style="text-align:right;padding:8px 0;border-bottom:0.5px solid var(--border)"><span style="background:${isExpired?'#fef2f2':qt.status==='sent'?'#E6F1FB':'var(--surface2)'};color:${isExpired?'#dc2626':qt.status==='sent'?'#185FA5':'var(--text2)'};padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">${isExpired?'Expired':qt.status}</span></td></tr>`;
+      }).join('')}</tbody>
+    </table>` : '<div class="empty"><p>No pending quotations</p></div>';
+
+  // ── INSIGHT BAR ──
+  const allMonthly={};
+  txs.forEach(t=>{if(!t.date)return;const mo=t.date.slice(0,7);if(!allMonthly[mo])allMonthly[mo]={in:0,out:0};if(t.type==='in')allMonthly[mo].in+=parseFloat(t.amount||0);else allMonthly[mo].out+=parseFloat(t.amount||0);});
+  const moEntries=Object.entries(allMonthly).filter(([k])=>k.startsWith(curYear));
+  const bestMo=moEntries.reduce((a,b)=>b[1].in>a[1].in?b:a,['',{in:0}]);
+  const completedJobs=jobs.filter(j=>j.status==='completed'&&j.value>0);
+  const avgJobVal=completedJobs.length?Math.round(completedJobs.reduce((s,j)=>s+parseFloat(j.value||0),0)/completedJobs.length):0;
+  const lastMo=new Date(new Date().getFullYear(),new Date().getMonth()-1,1).toISOString().slice(0,7);
+  const lastMoIn=allMonthly[lastMo]?allMonthly[lastMo].in:0;
+  const trendPct=lastMoIn>0?Math.round((totalIn-lastMoIn)/lastMoIn*100):null;
+
+  document.getElementById('dash-insights').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:flex;gap:12px;align-items:center">
+        <div style="width:36px;height:36px;background:#fef9c3;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" fill="none" stroke="#ca8a04" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg></div>
+        <div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Best month ${curYear}</div><div style="font-size:14px;font-weight:700;color:var(--text)">${bestMo[0]||'—'}</div><div style="font-size:11px;color:var(--text2)">${bestMo[1].in?fmt(bestMo[1].in):''}</div></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:flex;gap:12px;align-items:center">
+        <div style="width:36px;height:36px;background:${trendPct===null?'var(--surface2)':trendPct>=0?'#ecfdf5':'#fef2f2'};border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" fill="none" stroke="${trendPct===null?'var(--text3)':trendPct>=0?'#059669':'#dc2626'}" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="${trendPct!==null&&trendPct>=0?'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6':'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6'}"/></svg></div>
+        <div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Revenue vs last month</div><div style="font-size:14px;font-weight:700;color:${trendPct===null?'var(--text3)':trendPct>=0?'var(--green)':'var(--red)'}">${trendPct!==null?(trendPct>=0?'↑ ':'↓ ')+Math.abs(trendPct)+'%':'No data'}</div><div style="font-size:11px;color:var(--text2)">${lastMo?'vs '+lastMo:''}</div></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:flex;gap:12px;align-items:center">
+        <div style="width:36px;height:36px;background:#eef2ff;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" fill="none" stroke="#4f46e5" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
+        <div><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Avg job value</div><div style="font-size:14px;font-weight:700;color:var(--blue)">${avgJobVal?fmt(avgJobVal):'—'}</div><div style="font-size:11px;color:var(--text2)">${completedJobs.length} completed jobs</div></div>
+      </div>
+    </div>`;
 }
 
 // ── CASH FLOW ──────────────────────────────────────────────
@@ -871,6 +1007,60 @@ function renderDashboardCharts(txs) {
           y:{ticks:{callback:v=>'RM'+(v>=1000?(v/1000).toFixed(0)+'k':v), font:{size:10}}, grid:{color:'rgba(0,0,0,.05)'}}
         }
       }
+    });
+  }
+
+  // ── INCOME BY CATEGORY DONUT ──
+  const incomeBycat={};
+  validTxs.filter(t=>t.type==='in').forEach(t=>{
+    const cat=t.category||'Other';
+    incomeBycat[cat]=(incomeBycat[cat]||0)+parseFloat(t.amount||0);
+  });
+  const catLabels=Object.keys(incomeBycat).sort((a,b)=>incomeBycat[b]-incomeBycat[a]);
+  const catData=catLabels.map(k=>Math.round(incomeBycat[k]));
+  const catColors=['#4f46e5','#059669','#ca8a04','#dc2626','#7c3aed','#0891b2','#ea580c','#16a34a'];
+  const catCtx=document.getElementById('catDonutChart');
+  if(catCtx){
+    if(window._catChart) window._catChart.destroy();
+    window._catChart=new Chart(catCtx,{
+      type:'doughnut',
+      data:{labels:catLabels,datasets:[{data:catData,backgroundColor:catColors.slice(0,catLabels.length),borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: RM${ctx.raw.toLocaleString()}`}}}}
+    });
+    // Build legend
+    const leg=document.getElementById('cat-legend');
+    if(leg) leg.innerHTML=catLabels.map((l,i)=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:${catColors[i]||'#999'};display:inline-block"></span>${l}</span>`).join('');
+  }
+
+  // ── YEAR-ON-YEAR CHART ──
+  const selMo=document.getElementById('dash-month')?.value||thisMonth();
+  const selYear=parseInt(selMo.slice(0,4));
+  const selMonNum=selMo.slice(5,7);
+  const thisYearMo=selYear+'-'+selMonNum;
+  const lastYearMo=(selYear-1)+'-'+selMonNum;
+  const yoyCategories=['Income','Expenses','Net'];
+  const thisYearTx=validTxs.filter(t=>t.date&&t.date.startsWith(thisYearMo));
+  const lastYearTx=validTxs.filter(t=>t.date&&t.date.startsWith(lastYearMo));
+  const tyIn=Math.round(thisYearTx.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0));
+  const tyOut=Math.round(thisYearTx.filter(t=>t.type==='out').reduce((s,t)=>s+parseFloat(t.amount||0),0));
+  const lyIn=Math.round(lastYearTx.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0));
+  const lyOut=Math.round(lastYearTx.filter(t=>t.type==='out').reduce((s,t)=>s+parseFloat(t.amount||0),0));
+  const yoyCtx=document.getElementById('yoyChart');
+  if(yoyCtx){
+    if(window._yoyChart) window._yoyChart.destroy();
+    window._yoyChart=new Chart(yoyCtx,{
+      type:'bar',
+      data:{
+        labels:['Income','Expenses','Net profit'],
+        datasets:[
+          {label:String(selYear),data:[tyIn,tyOut,tyIn-tyOut],backgroundColor:['#4f46e5','#f87171','#34d399'],borderRadius:6,barPercentage:0.5},
+          {label:String(selYear-1),data:[lyIn,lyOut,lyIn-lyOut],backgroundColor:['#c7d2fe','#fecaca','#a7f3d0'],borderRadius:6,barPercentage:0.5}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'RM'+(v>=1000?(v/1000).toFixed(0)+'k':v),font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}}}}
     });
   }
 
