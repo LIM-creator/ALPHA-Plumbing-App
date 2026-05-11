@@ -176,12 +176,13 @@
   /* ── ITEM LINES ── */
   .item-lines { border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
   .item-line-header { display: grid; grid-template-columns: 1fr 80px 110px 110px 36px; gap: 8px; padding: 9px 14px; background: var(--surface2); font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
-  .item-line { display: grid; grid-template-columns: 1fr 80px 110px 110px 36px; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--border); align-items: center; }
-  .item-line input { padding: 6px 9px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; background: var(--surface); color: var(--text); width: 100%; outline: none; }
-  .item-line input:focus { border-color: var(--blue); }
+  .item-line { display: grid; grid-template-columns: 140px 1fr 90px 110px 36px; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--border); align-items: center; }
+  .item-line input, .item-line select { padding: 6px 9px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 12px; background: var(--surface); color: var(--text); width: 100%; outline: none; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .item-line input:focus, .item-line select:focus { border-color: var(--blue); }
   .item-line-total { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; color: var(--text2); }
   .item-line .remove-line { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; border-radius: 6px; font-size: 15px; }
   .item-line .remove-line:hover { color: var(--red); background: var(--red-light); }
+  .item-line-header { display: grid; grid-template-columns: 140px 1fr 90px 110px 36px; gap: 8px; padding: 9px 14px; background: var(--surface2); font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
 
   /* ── PROGRESS ── */
   .progress { height: 7px; background: var(--surface3); border-radius: 4px; overflow: hidden; margin-top: 6px; }
@@ -449,8 +450,9 @@
         <div class="form-group form-full"><label>Notes</label><textarea id="tx-notes" placeholder="Any additional details..."></textarea></div>
       </div>
       <div id="expense-section" style="display:none;margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;border:1.5px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em">Related job expenses (optional)</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Add the expenses for this job so your net profit is accurate. These will be saved as linked expense transactions automatically.</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Related job expenses (optional)</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Add costs for this job — materials, labour, transport etc. Each saves as a linked Money Out transaction automatically.</div>
+        <div style="display:grid;grid-template-columns:1fr 160px 110px 36px;gap:8px;padding:6px 0;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em"><span>Description</span><span>Category</span><span>Amount (RM)</span><span></span></div>
         <div id="expense-lines"></div>
         <button class="btn btn-sm" onclick="addExpenseLine()" style="margin-top:6px">+ Add expense item</button>
       </div>
@@ -486,24 +488,41 @@
     <div class="modal-header"><div class="modal-title" id="doc-modal-title">New Quotation</div><button class="modal-close" onclick="closeDocModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid" style="margin-bottom:16px">
-        <div class="form-group"><label>Client</label><select id="doc-client" onchange="fillClientInfo()"><option value="">Select client...</option></select></div>
+        <div class="form-group"><label>Client</label><select id="doc-client"><option value="">Select client...</option></select></div>
         <div class="form-group"><label>Date</label><input type="date" id="doc-date"></div>
-        <div class="form-group form-full"><label>Job / project description</label><input type="text" id="doc-job" placeholder="e.g. Full pipe replacement at Taman Melawati"></div>
+        <div class="form-group form-full"><label>Project description</label><input type="text" id="doc-job" placeholder="e.g. Plumbing works — pipe replacement & waterproofing"></div>
         <div class="form-group"><label>Valid until / Due date</label><input type="date" id="doc-due"></div>
         <div class="form-group"><label>SST (6%)</label><select id="doc-sst"><option value="no">No SST</option><option value="yes">Apply SST 6%</option></select></div>
+        <div class="form-group"><label>Project duration</label><input type="text" id="doc-duration" placeholder="e.g. All work within 1-3 days"></div>
+        <div class="form-group"><label>Start date / availability</label><input type="text" id="doc-start" placeholder="e.g. Can start on 17th Apr 2026"></div>
+        <div class="form-group form-full"><label>Payment terms</label><select id="doc-payterms">
+          <option value="50/50">50% deposit + 50% on completion (standard)</option>
+          <option value="50/30/20">50% deposit + 30% on milestone + 20% on completion</option>
+          <option value="100">Full payment on completion</option>
+          <option value="custom">Custom (specify in notes)</option>
+        </select></div>
       </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Line items</div>
       <div class="item-lines" id="doc-items-wrap">
-        <div class="item-line-header"><span>Description</span><span>Qty</span><span>Unit price (RM)</span><span>Total (RM)</span><span></span></div>
+        <div class="item-line-header" style="grid-template-columns:140px 1fr 90px 110px 36px"><span>Section</span><span>Description</span><span>Qty / type</span><span>Amount (RM)</span><span></span></div>
         <div id="doc-lines"></div>
       </div>
-      <button class="btn btn-sm" onclick="addDocLine()" style="margin-bottom:16px">+ Add line item</button>
-      <div class="form-grid">
-        <div class="form-group form-full"><label>Notes / terms</label><textarea id="doc-notes" placeholder="Payment terms, special conditions..."></textarea></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="addDocLine()">+ Add line item</button>
+        <button class="btn btn-sm" onclick="addDocLine({section:'A) Preliminaries',desc:'General preliminaries including site visit.',qty:'1',valtype:'waived'})">+ Prelim (waived)</button>
+        <button class="btn btn-sm" onclick="addDocLine({section:'',desc:'',qty:'1',valtype:'discount'})">+ Discount line</button>
       </div>
-      <div style="text-align:right;font-size:13px;color:var(--text2)">
+
+      <div style="text-align:right;font-size:13px;color:var(--text2);line-height:2;background:var(--surface2);padding:12px 16px;border-radius:10px;margin-bottom:12px">
         Subtotal: RM <span id="doc-subtotal">0.00</span><br>
         SST (6%): RM <span id="doc-sst-amt">0.00</span><br>
+        Discounts: RM <span id="doc-disc-amt">0.00</span><br>
         <strong style="font-size:16px;color:var(--text)">Total: RM <span id="doc-total">0.00</span></strong>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group form-full"><label>Notes / terms</label><textarea id="doc-notes" rows="3"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -959,19 +978,22 @@ function toggleExpenseSection(){
 let expLineCount=0;
 function addExpenseLine(line){
   const id='exp-'+Date.now()+'-'+(expLineCount++);
+  const catOpts = CATS_OUT.map(c=>`<option${line&&line.cat===c?' selected':''}>${c}</option>`).join('');
   const div=document.createElement('div');
   div.id=id;
-  div.style.cssText='display:grid;grid-template-columns:1fr 120px 36px;gap:8px;margin-bottom:8px;align-items:center';
+  div.style.cssText='display:grid;grid-template-columns:1fr 160px 110px 36px;gap:8px;margin-bottom:8px;align-items:center';
   div.innerHTML=`
-    <input type="text" placeholder="e.g. Pipe fittings, Labour, Transport..." value="${line?line.desc:''}" style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none">
-    <input type="number" placeholder="Amount (RM)" value="${line?line.amount:''}" min="0" step="0.01" style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none">
+    <input type="text" placeholder="e.g. Pipe fittings, Labour, Transport..." value="${line?escHtml(line.desc||''):''}" style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none">
+    <select style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none;background:var(--surface);color:var(--text)">${catOpts}</select>
+    <input type="number" placeholder="RM" value="${line?line.amount:''}" min="0" step="0.01" style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;width:100%;outline:none">
     <button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;border-radius:6px">✕</button>`;
   document.getElementById('expense-lines').appendChild(div);
 }
 function getExpenseLines(){
   return [...document.querySelectorAll('#expense-lines > div')].map(row=>{
     const inputs=row.querySelectorAll('input');
-    return {desc:inputs[0].value.trim(), amount:parseFloat(inputs[1].value)||0};
+    const sel=row.querySelector('select');
+    return {desc:inputs[0].value.trim(), cat:sel?sel.value:'Materials', amount:parseFloat(inputs[1].value)||0};
   }).filter(l=>l.desc&&l.amount>0);
 }
 function closeTxModal(){document.getElementById('txModal').classList.remove('open');}
@@ -987,7 +1009,7 @@ async function saveTx(){
   const expLines=getExpenseLines();
   if(expLines.length){
     for(const exp of expLines){
-      await ins('transactions',{type:'out',date,description:exp.desc+' (linked to: '+desc+')',category:'Materials',amount:exp.amount,scheduled_date:null,invoice_num:invoiceNum,notes:'Auto-linked expense'});
+      await ins('transactions',{type:'out',date,description:exp.desc+' (linked to: '+desc+')',category:exp.cat||'Materials',amount:exp.amount,scheduled_date:null,invoice_num:invoiceNum,notes:'Auto-linked expense'});
     }
   }
   closeTxModal();
@@ -1070,39 +1092,54 @@ function closeDocModal(){document.getElementById('docModal').classList.remove('o
 
 function addDocLine(line){
   const id='line-'+Date.now()+'-'+(docLineCount++);
+  const vt = line&&line.valtype ? line.valtype : 'amount';
+  const vtOpts = ['amount','waived','free','covered','tbc','discount'].map(v=>`<option value="${v}"${v===vt?' selected':''}>${v.charAt(0).toUpperCase()+v.slice(1)}</option>`).join('');
   const div=document.createElement('div');
   div.className='item-line';
   div.id=id;
   div.innerHTML=`
-    <input type="text" placeholder="Description of work..." value="${line?escHtml(line.desc||''):''}" oninput="updateDocTotal()">
-    <input type="number" placeholder="1" min="0" step="0.5" value="${line?line.qty:1}" oninput="updateDocTotal()">
-    <input type="number" placeholder="0.00" min="0" step="0.01" value="${line?line.unit:''}" oninput="updateDocTotal()">
-    <span class="item-line-total">RM 0.00</span>
+    <input type="text" placeholder="Section (e.g. B) Plumbing)" value="${escHtml(line&&line.section!=null?line.section:'')}" oninput="updateDocTotal()" style="font-size:11px;font-weight:600">
+    <input type="text" placeholder="Description of work..." value="${escHtml(line?line.desc||'':'')} " oninput="updateDocTotal()">
+    <select onchange="toggleDocLineAmount('${id}',this.value);updateDocTotal()">${vtOpts}</select>
+    <input type="number" placeholder="0.00" min="0" step="0.01" value="${line&&line.valtype==='amount'||line&&line.valtype==='discount'?line.unit||'':''}" oninput="updateDocTotal()" style="${vt!=='amount'&&vt!=='discount'?'display:none':''}">
     <button class="remove-line" onclick="document.getElementById('${id}').remove();updateDocTotal()">✕</button>`;
   document.getElementById('doc-lines').appendChild(div);
   updateDocTotal();
 }
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toggleDocLineAmount(id, vt){
+  const row=document.getElementById(id);
+  if(!row) return;
+  const amtInput=row.querySelectorAll('input')[1];
+  amtInput.style.display=(vt==='amount'||vt==='discount')?'':'none';
+  if(vt!=='amount'&&vt!=='discount') amtInput.value='';
+}
+function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function getDocLines(){
   return [...document.querySelectorAll('#doc-lines .item-line')].map(row=>{
     const inputs=row.querySelectorAll('input');
-    return {desc:inputs[0].value.trim(),qty:parseFloat(inputs[1].value)||0,unit:parseFloat(inputs[2].value)||0};
+    const sel=row.querySelector('select');
+    const section=inputs[0].value.trim();
+    const desc=inputs[1].value.trim();
+    const valtype=sel?sel.value:'amount';
+    const unit=parseFloat(inputs[1+1]?.value)||0;
+    return {section,desc,valtype,unit};
   }).filter(l=>l.desc);
 }
 function updateDocTotal(){
   const lines=getDocLines();
   const sst=document.getElementById('doc-sst').value;
-  const {sub,sstAmt,total}=calcTotal(lines,sst);
-  document.querySelectorAll('#doc-lines .item-line').forEach((row,i)=>{
-    const inputs=row.querySelectorAll('input');
-    const qty=parseFloat(inputs[1]?.value)||0;
-    const unit=parseFloat(inputs[2]?.value)||0;
-    const span=row.querySelector('.item-line-total');
-    if(span) span.textContent='RM '+fmtNum(qty*unit);
+  let sub=0, discTotal=0;
+  lines.forEach(l=>{
+    if(l.valtype==='amount') sub+=l.unit;
+    else if(l.valtype==='discount') discTotal+=l.unit;
   });
+  const sstAmt=sst==='yes'?sub*0.06:0;
+  const total=sub+sstAmt-discTotal;
   document.getElementById('doc-subtotal').textContent=fmtNum(sub);
   document.getElementById('doc-sst-amt').textContent=fmtNum(sstAmt);
-  document.getElementById('doc-total').textContent=fmtNum(total);
+  document.getElementById('doc-disc-amt').textContent=fmtNum(discTotal);
+  document.getElementById('doc-total').textContent=fmtNum(Math.max(0,total));
+  document.getElementById('doc-sst').onchange=updateDocTotal;
 }
 
 async function saveDoc(){
@@ -1111,18 +1148,39 @@ async function saveDoc(){
   if(!clientId) return alert('Please select a client.');
   if(!lines.length) return alert('Please add at least one line item.');
   const col=docMode==='quotation'?'quotations':'invoices';
-  const prefix=docMode==='quotation'?'QUO':'INV';
-  const num=await nextNum(col,'num',prefix);
+
+  // Generate Q-number in Alpha format: Q[YYYYMMDD]-3 or INV-[YYYYMMDD]
+  const dateVal=document.getElementById('doc-date').value||todate();
+  const dateCompact=dateVal.replace(/-/g,'');
+  const existingDocs=await q(col);
+  let num;
+  if(docMode==='quotation'){
+    const base=`Q${dateCompact}-3`;
+    const existing=existingDocs.filter(d=>d.num&&d.num.startsWith('Q'+dateCompact));
+    num=existing.length?`Q${dateCompact}-${existing.length+3}`:base;
+  } else {
+    const base=`INV-${dateCompact}`;
+    const existing=existingDocs.filter(d=>d.num&&d.num.startsWith('INV-'+dateCompact));
+    num=existing.length?`INV-${dateCompact}-${existing.length+1}`:base;
+  }
+
   const row={
     num,client_id:clientId,
-    date:document.getElementById('doc-date').value,
+    date:dateVal,
     due_date:document.getElementById('doc-due').value||null,
     job:document.getElementById('doc-job').value,
     lines,
     sst:document.getElementById('doc-sst').value,
-    notes:document.getElementById('doc-notes').value,
+    notes:document.getElementById('doc-notes').value
+      +(document.getElementById('doc-duration').value?'
+Project duration: '+document.getElementById('doc-duration').value:'')
+      +(document.getElementById('doc-start').value?'
+'+document.getElementById('doc-start').value:''),
     status:docMode==='invoice'?'unpaid':'draft',
-    paid_deposit:0,paid_balance:0
+    paid_deposit:0,paid_balance:0,
+    pay_terms:document.getElementById('doc-payterms').value,
+    duration:document.getElementById('doc-duration').value,
+    start_info:document.getElementById('doc-start').value
   };
   const saved=await ins(col,row);
   if(saved){closeDocModal();docMode==='quotation'?renderQuotations():renderInvoices();}
@@ -1252,60 +1310,110 @@ async function previewDoc(type,id){
   const doc=docs[0];
   const clients=await q('clients',{eq:{id:doc.client_id}});
   const client=clients[0]||{};
-  const {sub,sstAmt,total}=calcTotal(doc.lines,doc.sst);
   const isQuote=type==='quotation';
   const isPaid=doc.status==='paid';
 
-  currentPreviewHTML=`<div class="doc-preview" id="print-area">
+  // Compute totals from line types
+  const lines=doc.lines||[];
+  let sub=0,discTotal=0;
+  lines.forEach(l=>{
+    if(l.valtype==='amount'||!l.valtype) sub+=parseFloat(l.unit||0);
+    else if(l.valtype==='discount') discTotal+=parseFloat(l.unit||0);
+  });
+  const sstAmt=doc.sst==='yes'?sub*0.06:0;
+  const total=sub+sstAmt-discTotal;
+  const paid=(parseFloat(doc.paid_deposit)||0)+(parseFloat(doc.paid_balance)||0);
+
+  // Group lines by section
+  let lastSection='';
+  const lineRows=lines.map(l=>{
+    let sectionHeader='';
+    const sec=l.section||'';
+    if(sec&&sec!==lastSection){lastSection=sec;sectionHeader=`<tr><td colspan="3" style="padding:12px 10px 4px;font-weight:700;font-size:13px;background:#f7f6fb;border-bottom:1px solid #e4e2ef">${escHtml(sec)}</td></tr>`;}
+    const valDisplay = l.valtype==='amount'?'RM '+fmtNum(l.unit)
+      :l.valtype==='discount'?`<span style="color:#dc2626">-RM ${fmtNum(l.unit)}</span>`
+      :`<span style="color:#059669;font-weight:700">${(l.valtype||'').toUpperCase()}</span>`;
+    return sectionHeader+`<tr><td style="padding:8px 10px;font-size:12px;color:#16152a;line-height:1.5">${escHtml(l.desc||'')}</td><td style="text-align:center;padding:8px 10px;font-size:12px">1</td><td style="text-align:right;padding:8px 10px">${valDisplay}</td></tr>`;
+  }).join('');
+
+  // Payment terms text
+  const ptMap={
+    '50/50':'50% deposit upon confirmation. Balance on completion day or next business day.',
+    '50/30/20':'50% deposit upon confirmation. 30% on milestone. 20% upon final works & cleaning.',
+    '100':'Full payment upon completion.',
+    'custom':doc.notes||''
+  };
+  const ptText=ptMap[doc.pay_terms]||ptMap['50/50'];
+
+  currentPreviewHTML=`<div class="doc-preview" id="print-area" style="font-family:Arial,sans-serif">
     <div class="doc-header">
       <div>
-        <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" class="doc-logo" alt="Alpha Plumbing">
-        <div style="margin-top:8px;font-size:12px;color:#6b6860;line-height:1.8">
-          <strong>Alpha Plumbing & Electrical Services</strong><br>
-          Tel: +60 17-644 9397<br>
-          Email: info@alphaplumbing.com.my<br>
-          Kuala Lumpur, Malaysia
+        <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" class="doc-logo" alt="Alpha Plumbing" style="height:56px">
+        <div style="margin-top:8px;font-size:11px;color:#5e5c78;line-height:1.8">
+          ALPHA Electrical &amp; Plumbing Services<br>
+          <strong>Reg No:</strong> CT0109135-T<br>
+          <strong>Contact:</strong> +6017-6449397<br>
+          <strong>Prepared by:</strong> Mr. LIM, PMP® Certified
         </div>
       </div>
       <div class="doc-info">
-        <div class="doc-num">${doc.num}</div>
-        <div class="doc-meta">${isQuote?'QUOTATION':'TAX INVOICE'}</div>
-        <div class="doc-meta">Date: ${doc.date}</div>
-        <div class="doc-meta">${isQuote?'Valid until':'Due date'}: ${doc.due_date||'—'}</div>
-        ${isPaid?'<div class="doc-stamp" style="margin-top:8px">PAID</div>':''}
+        <div style="font-size:11px;color:#5e5c78;line-height:2">
+          <strong>To:</strong> ${client.name||'PIC'}<br>
+          ${client.addr?`${escHtml(client.addr)}<br>`:''}
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#5e5c78;line-height:2">
+          <strong>Quotation No:</strong> ${doc.num}<br>
+          <strong>Issue Date:</strong> ${doc.date}<br>
+          ${doc.due_date?`<strong>Valid until:</strong> ${doc.due_date}<br>`:''}
+          ${isPaid?'<div class="doc-stamp">PAID</div>':''}
+        </div>
       </div>
     </div>
-    <div class="doc-parties">
-      <div>
-        <div class="doc-label">From</div>
-        <div class="doc-name">Alpha Plumbing & Electrical Services</div>
-        <div class="doc-addr">Lim (PMP® Certified)<br>Kuala Lumpur, Malaysia<br>+60 17-644 9397</div>
-      </div>
-      <div>
-        <div class="doc-label">Bill to</div>
-        <div class="doc-name">${client.name||'—'}</div>
-        <div class="doc-addr">${client.addr||''}<br>${client.phone||''}<br>${client.email||''}</div>
-      </div>
-    </div>
-    <div style="font-weight:600;margin-bottom:14px;font-size:14px">${doc.job||''}</div>
-    <table>
-      <thead><tr><th style="text-align:left;width:50%">Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Amount</th></tr></thead>
-      <tbody>${(doc.lines||[]).map(l=>`<tr><td>${escHtml(l.desc||'')}</td><td style="text-align:center">${l.qty}</td><td style="text-align:right">RM ${fmtNum(l.unit)}</td><td style="text-align:right">RM ${fmtNum((l.qty||0)*(l.unit||0))}</td></tr>`).join('')}</tbody>
+
+    <table style="width:100%;margin-bottom:16px">
+      <thead><tr>
+        <th style="text-align:left;background:#f0eff5;padding:10px;font-size:12px;color:#5e5c78">Description</th>
+        <th style="text-align:center;background:#f0eff5;padding:10px;font-size:12px;color:#5e5c78;width:60px">Unit(s)</th>
+        <th style="text-align:right;background:#f0eff5;padding:10px;font-size:12px;color:#5e5c78;width:130px">Amount (MYR)</th>
+      </tr></thead>
+      <tbody>
+        <tr><td colspan="3" style="padding:10px;font-weight:700;font-size:13px;background:#eeedf5;letter-spacing:.03em">PLUMBING SERVICES</td></tr>
+        ${doc.job?`<tr><td colspan="3" style="padding:6px 10px;font-size:12px;color:#5e5c78"><strong>Project:</strong> ${escHtml(doc.job)}</td></tr>`:''}
+        ${lineRows}
+        ${discTotal>0?`<tr><td colspan="2" style="text-align:right;padding:8px 10px;font-size:12px;color:#dc2626;font-style:italic">Discount</td><td style="text-align:right;padding:8px 10px;color:#dc2626">-${fmtNum(discTotal)}</td></tr>`:''}
+      </tbody>
     </table>
-    <div class="doc-totals">
-      <table>
-        <tr><td>Subtotal</td><td style="text-align:right">RM ${fmtNum(sub)}</td></tr>
-        ${doc.sst==='yes'?`<tr><td>SST (6%)</td><td style="text-align:right">RM ${fmtNum(sstAmt)}</td></tr>`:''}
-        <tr class="doc-total-final"><td><strong>Total</strong></td><td style="text-align:right"><strong>RM ${fmtNum(total)}</strong></td></tr>
-        ${!isQuote&&(parseFloat(doc.paid_deposit)||0)>0?`<tr><td style="color:#0e7f5a">Deposit paid</td><td style="text-align:right;color:#0e7f5a">- RM ${fmtNum(doc.paid_deposit)}</td></tr>`:''}
-        ${!isQuote&&(parseFloat(doc.paid_deposit)||0)>0?`<tr><td><strong>Balance due</strong></td><td style="text-align:right"><strong>RM ${fmtNum(total-(parseFloat(doc.paid_deposit)||0)-(parseFloat(doc.paid_balance)||0))}</strong></td></tr>`:''}
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+      <table style="width:220px">
+        ${doc.sst==='yes'?`<tr><td style="padding:4px 0;font-size:12px;color:#5e5c78">Subtotal</td><td style="text-align:right;font-size:12px">RM ${fmtNum(sub)}</td></tr><tr><td style="padding:4px 0;font-size:12px;color:#5e5c78">SST (6%)</td><td style="text-align:right;font-size:12px">RM ${fmtNum(sstAmt)}</td></tr>`:''}
+        <tr style="border-top:2px solid #16152a"><td style="padding:8px 0;font-size:16px;font-weight:800">TOTAL*</td><td style="text-align:right;font-size:16px;font-weight:800">MYR ${fmtNum(total)}</td></tr>
+        ${!isQuote&&paid>0?`<tr><td style="padding:4px 0;font-size:12px;color:#059669">Paid</td><td style="text-align:right;font-size:12px;color:#059669">- RM ${fmtNum(paid)}</td></tr><tr><td style="padding:4px 0;font-size:13px;font-weight:700">Balance due</td><td style="text-align:right;font-size:13px;font-weight:700">RM ${fmtNum(Math.max(0,total-paid))}</td></tr>`:''}
       </table>
     </div>
+
+    ${doc.duration||doc.start_info?`<p style="font-size:11px;color:#5e5c78;font-style:italic;margin-bottom:4px">${doc.duration?'All prices will include necessary material, petrol &amp; manpower.<br>':''} ${doc.duration?'Project Duration: '+escHtml(doc.duration)+'.':''} ${doc.start_info?'('+escHtml(doc.start_info)+')':''}</p>`:''}
+
     <div class="doc-footer">
-      <div class="doc-terms">${doc.notes||''}</div>
-      <div style="margin-top:16px">Thank you for choosing Alpha Plumbing & Electrical Services.</div>
+      <div style="margin-bottom:8px;font-size:11px;font-style:italic">
+        This is a computer-generated quotation. No signature is needed.<br>
+        All prices are only offered in this package. Separation of works will be charged differently.<br>
+        <strong>By accepting this quotation, the following is the payment terms:</strong><br>
+        ${ptText}<br>
+        <strong>DuitNow Account: Public Bank Bhd "4651 667 228" Lim. W.L</strong>
+      </div>
+      <div style="text-align:center;margin-top:12px;font-size:11px;color:#9e9bb8">
+        The above quote will last for 10 (Ten) working days.<br>
+        Feel free to refer any friends or relatives who need services.<br>
+        <strong>THANK YOU FOR YOUR BUSINESS!</strong>
+      </div>
+      <div style="display:flex;gap:24px;justify-content:center;margin-top:12px;font-size:11px;color:#4f46e5">
+        <span>www.alphaplumbing.com.my</span>
+        <span>Alpha.Electrical.Plumbing.Services</span>
+        <span>tiktok.com/@alpha.plumber</span>
+      </div>
     </div>
-  </div>`;
+  </div>\`;
 
   document.getElementById('preview-content').innerHTML=currentPreviewHTML;
   document.getElementById('preview-title').textContent=`${isQuote?'Quotation':'Invoice'} — ${doc.num}`;
