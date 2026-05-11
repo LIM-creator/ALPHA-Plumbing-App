@@ -270,6 +270,88 @@
 
 </head>
 <body>
+<!-- PASSCODE LOCK -->
+<div id="lock-screen" style="position:fixed;inset:0;z-index:9999;background:#16152a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <img src="https://alphaplumbing.com.my/wp-content/uploads/2024/12/alphaplumbing-logo.webp" alt="Alpha Plumbing" style="height:52px;object-fit:contain;filter:brightness(0) invert(1);opacity:.9;margin-bottom:32px">
+  <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:32px 28px;width:100%;max-width:340px;text-align:center">
+    <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">Business System</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">Enter your access code</div>
+    <div id="lock-dots" style="display:flex;justify-content:center;gap:14px;margin-bottom:24px">
+      <div class="lock-dot" id="dot-0"></div>
+      <div class="lock-dot" id="dot-1"></div>
+      <div class="lock-dot" id="dot-2"></div>
+      <div class="lock-dot" id="dot-3"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;max-width:240px;margin:0 auto">
+      <button class="lock-key" onclick="lockKey('1')">1</button>
+      <button class="lock-key" onclick="lockKey('2')">2</button>
+      <button class="lock-key" onclick="lockKey('3')">3</button>
+      <button class="lock-key" onclick="lockKey('4')">4</button>
+      <button class="lock-key" onclick="lockKey('5')">5</button>
+      <button class="lock-key" onclick="lockKey('6')">6</button>
+      <button class="lock-key" onclick="lockKey('7')">7</button>
+      <button class="lock-key" onclick="lockKey('8')">8</button>
+      <button class="lock-key" onclick="lockKey('9')">9</button>
+      <button class="lock-key" onclick="lockKey('clear')" style="font-size:11px;color:rgba(255,255,255,.4)">CLR</button>
+      <button class="lock-key" onclick="lockKey('0')">0</button>
+      <button class="lock-key" onclick="lockKey('del')" style="font-size:18px">⌫</button>
+    </div>
+    <div id="lock-error" style="color:#f87171;font-size:12px;margin-top:16px;height:18px"></div>
+  </div>
+  <div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:24px">Alpha Plumbing & Electrical Services</div>
+</div>
+<style>
+  .lock-dot { width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:transparent;transition:all .15s; }
+  .lock-dot.filled { background:#4f46e5;border-color:#4f46e5; }
+  .lock-dot.error { background:#f87171;border-color:#f87171; }
+  .lock-key { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#fff;font-size:20px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;border-radius:12px;padding:16px;cursor:pointer;transition:all .1s; }
+  .lock-key:hover { background:rgba(255,255,255,.15); }
+  .lock-key:active { transform:scale(.93);background:rgba(255,255,255,.2); }
+</style>
+<script>
+  const PASSCODE = '178178'; // ← Change this to your private code
+  let lockInput = '';
+  const SESSION_KEY = 'alpha_unlocked';
+
+  function checkSession() {
+    const val = sessionStorage.getItem(SESSION_KEY);
+    if(val === 'yes') { document.getElementById('lock-screen').style.display = 'none'; }
+  }
+
+  function lockKey(k) {
+    if(k==='clear') { lockInput=''; updateDots(); return; }
+    if(k==='del') { lockInput=lockInput.slice(0,-1); updateDots(); return; }
+    if(lockInput.length >= 4) return;
+    lockInput += k;
+    updateDots();
+    if(lockInput.length === 4) {
+      setTimeout(()=>{
+        if(lockInput === PASSCODE) {
+          sessionStorage.setItem(SESSION_KEY,'yes');
+          document.getElementById('lock-screen').style.display='none';
+        } else {
+          document.getElementById('lock-error').textContent='Incorrect code. Try again.';
+          document.querySelectorAll('.lock-dot').forEach(d=>d.classList.add('error'));
+          setTimeout(()=>{
+            lockInput='';
+            updateDots();
+            document.querySelectorAll('.lock-dot').forEach(d=>d.classList.remove('error'));
+            document.getElementById('lock-error').textContent='';
+          },700);
+        }
+      },120);
+    }
+  }
+
+  function updateDots() {
+    for(let i=0;i<4;i++) {
+      const d=document.getElementById('dot-'+i);
+      d.classList.toggle('filled', i<lockInput.length);
+    }
+  }
+
+  checkSession();
+</script>
 
 <!-- MOBILE HEADER -->
 <div class="mobile-header" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:var(--text);align-items:center;padding:0 16px;gap:12px">
@@ -627,10 +709,18 @@
     <div class="modal-body">
       <div class="form-grid" style="margin-bottom:16px">
 
-        <div class="form-group">
-          <label for="doc-client">Client <span style="font-size:11px;color:var(--text3);font-weight:400">(optional)</span></label>
-          <select id="doc-client"><option value="">Walk-in / no client selected</option></select>
-          <div style="font-size:11px;color:var(--text3);margin-top:3px">You can save without selecting a client</div>
+        <div class="form-group form-full">
+          <label for="doc-client-search">Client <span style="font-size:11px;color:var(--text3);font-weight:400">(optional — leave blank for walk-in)</span></label>
+          <div style="position:relative">
+            <input type="text" id="doc-client-search" placeholder="Type to search client, or leave blank..." autocomplete="off"
+              oninput="filterDocClients(this.value)" onfocus="showDocClientList()" style="width:100%">
+            <div id="doc-client-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--blue);border-radius:0 0 9px 9px;max-height:180px;overflow-y:auto;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+          </div>
+          <input type="hidden" id="doc-client-id" value="">
+          <div id="doc-client-tag" style="display:none;margin-top:6px;display:none;align-items:center;gap:8px;background:var(--blue-light);color:var(--blue);padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600">
+            <span id="doc-client-tag-name"></span>
+            <button onclick="clearDocClient()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:14px;padding:0;line-height:1">✕</button>
+          </div>
         </div>
         <div class="form-group"><label for="doc-date">Date</label><input type="date" id="doc-date"></div>
 
@@ -672,24 +762,16 @@
         </select></div>
       </div>
 
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Service type</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="doc-service-type">
-        <button class="btn btn-sm service-type-btn active" data-type="Plumbing" onclick="setServiceType('Plumbing',this)" style="background:var(--blue-light);color:var(--blue);border-color:var(--blue)">Plumbing</button>
-        <button class="btn btn-sm service-type-btn" data-type="Electrical" onclick="setServiceType('Electrical',this)">Electrical</button>
-        <button class="btn btn-sm service-type-btn" data-type="Renovation" onclick="setServiceType('Renovation',this)">Renovation</button>
-        <button class="btn btn-sm service-type-btn" data-type="Other" onclick="setServiceType('Other',this)">Other</button>
-        <input type="text" id="doc-service-other" placeholder="Specify service type..." style="display:none;flex:1;min-width:140px;padding:5px 10px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px">
-      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Work items</div>
 
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Line items</div>
-      <div class="item-lines" id="doc-items-wrap">
-        <div class="item-line-header" style="grid-template-columns:140px 1fr 90px 110px 36px"><span>Section</span><span>Description</span><span>Qty / type</span><span>Amount (RM)</span><span></span></div>
-        <div id="doc-lines"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="addDocLine()">+ Add line item</button>
-        <button class="btn btn-sm" onclick="addDocLine({section:'A) Preliminaries',desc:'General preliminaries including site visit.',valtype:'waived'})">+ Prelim</button>
-        <button class="btn btn-sm" onclick="addDocLine({section:'',desc:'',valtype:'discount'})">+ Discount</button>
+      <!-- Section groups -->
+      <div id="doc-sections"></div>
+
+      <!-- Add section / line controls -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;padding:10px;background:var(--surface2);border-radius:10px">
+        <button class="btn btn-sm btn-primary" onclick="addDocSection()">+ Add section</button>
+        <button class="btn btn-sm" onclick="addDocDiscount()">+ Discount line</button>
+        <div id="doc-discount-lines"></div>
       </div>
 
       <div style="text-align:right;font-size:13px;color:var(--text2);line-height:2;background:var(--surface2);padding:12px 16px;border-radius:10px;margin-bottom:12px">
@@ -1377,62 +1459,193 @@ async function delTarget(id){if(!confirm('Remove this target?'))return;await del
 let docMode='quotation';
 let docLineCount=0;
 
-// Duration display map
-const DURATION_MAP = {
-  '1day':'All work within 1 working day',
-  '1-2days':'All work within 1–2 working days',
-  '1-3days':'All work within 1–3 working days',
-  '3-5days':'All work within 3–5 working days',
-  '1week':'All work within 1 week',
-  '1-2weeks':'All work within 1–2 weeks',
-  '2-4weeks':'All work within 2–4 weeks',
-  '1-3months':'All work within 1–3 months',
-  'custom':'custom'
-};
 
-function toggleCustomDuration(val) {
-  const custom = document.getElementById('doc-duration-custom');
-  if(custom) custom.style.display = val==='custom' ? 'block' : 'none';
+// ── DOC CLIENT SEARCH ─────────────────────────────────────
+let docClients = [];
+
+async function loadDocClients() {
+  docClients = await q('clients',{order:'name'});
 }
 
-function setServiceType(type, btn) {
-  document.querySelectorAll('.service-type-btn').forEach(b=>{
-    b.style.background=''; b.style.color=''; b.style.borderColor='';
-    b.classList.remove('active');
+function showDocClientList() {
+  filterDocClients(document.getElementById('doc-client-search')?.value||'');
+}
+
+function filterDocClients(val) {
+  const dd = document.getElementById('doc-client-dropdown');
+  if(!dd) return;
+  const filtered = val
+    ? docClients.filter(c=>c.name.toLowerCase().includes(val.toLowerCase())||(c.phone&&c.phone.includes(val)))
+    : docClients.slice(0,8);
+  dd.style.display = 'block';
+  dd.innerHTML = filtered.map(c=>`<div onclick="selectDocClient(${c.id},'${escHtml(c.name)}')" style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''"><div style="font-weight:600">${escHtml(c.name)}</div><div style="font-size:11px;color:var(--text3)">${c.phone||''}${c.addr?' · '+c.addr.split(',')[0]:''}</div></div>`).join('')
+    + `<div onclick="openClientModal()" style="padding:10px 14px;cursor:pointer;font-size:12px;color:var(--blue);font-weight:600;border-top:1px solid var(--border)">+ Add new client</div>`;
+  setTimeout(()=>document.addEventListener('click',closeDocClientOutside,{once:true}),50);
+}
+
+function closeDocClientOutside(e) {
+  if(!e.target.closest('#doc-client-dropdown')&&!e.target.closest('#doc-client-search')) closeDocClientList();
+}
+function closeDocClientList() { const dd=document.getElementById('doc-client-dropdown'); if(dd) dd.style.display='none'; }
+
+function selectDocClient(id, name) {
+  document.getElementById('doc-client-id').value=id;
+  document.getElementById('doc-client-search').value=name;
+  closeDocClientList();
+  const tag=document.getElementById('doc-client-tag');
+  const tn=document.getElementById('doc-client-tag-name');
+  if(tag&&tn){tn.textContent=name;tag.style.display='flex';}
+}
+
+function clearDocClient() {
+  document.getElementById('doc-client-id').value='';
+  document.getElementById('doc-client-search').value='';
+  const tag=document.getElementById('doc-client-tag');
+  if(tag) tag.style.display='none';
+}
+
+// ── SECTION-BASED DOC BUILDER ─────────────────────────────
+let sectionCount=0;
+const SECTION_LETTERS=['A','B','C','D','E','F','G','H'];
+const DEFAULT_SECTIONS=['Preliminaries','Plumbing Work','Electrical Work','Renovation Work','Outdoor Work','Promotions / Add-Ons'];
+let lineCount=0;
+
+function addDocSection(opts) {
+  const idx=sectionCount++;
+  const letter=SECTION_LETTERS[idx]||String.fromCharCode(65+idx);
+  const defaultName=opts?.name||(DEFAULT_SECTIONS[idx]||'Additional Work');
+  const id='section-'+Date.now()+'-'+idx;
+  const div=document.createElement('div');
+  div.id=id; div.className='doc-section-group';
+  div.style.cssText='border:1.5px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden';
+  div.innerHTML=`
+    <div style="background:var(--surface2);padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+      <span class="sec-letter" style="background:var(--text);color:#fff;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${letter}</span>
+      <input type="text" value="${escHtml(defaultName)}" placeholder="Section name..." class="sec-name-input"
+        style="flex:1;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif">
+      <button onclick="addLineToSection('${id}')" class="btn btn-sm" style="padding:4px 10px;font-size:11px;flex-shrink:0">+ Line</button>
+      <button onclick="document.getElementById('${id}').remove();recalcSectionLetters();updateDocTotal()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 4px">✕</button>
+    </div>
+    <div class="section-lines" id="${id}-lines" style="min-height:40px"></div>`;
+  document.getElementById('doc-sections').appendChild(div);
+  if(opts?.lines&&opts.lines.length) { opts.lines.forEach(l=>addLineToSection(id,l)); }
+  else { addLineToSection(id, opts?.defaultLine||null); }
+  updateDocTotal();
+}
+
+function recalcSectionLetters() {
+  sectionCount=0;
+  document.querySelectorAll('.doc-section-group').forEach((sec,i)=>{
+    const letter=SECTION_LETTERS[i]||String.fromCharCode(65+i);
+    const badge=sec.querySelector('.sec-letter');
+    if(badge) badge.textContent=letter;
+    sectionCount=i+1;
   });
-  btn.style.background='var(--blue-light)'; btn.style.color='var(--blue)'; btn.style.borderColor='var(--blue)';
-  btn.classList.add('active');
-  const otherInput = document.getElementById('doc-service-other');
-  if(otherInput) otherInput.style.display = type==='Other' ? 'block' : 'none';
-  // Update section header in existing lines that have B) work section
-  document.querySelectorAll('#doc-lines .item-line').forEach(row=>{
-    const secInput = row.querySelectorAll('input')[0];
-    if(secInput && secInput.value && secInput.value.match(/^B\).*Work$/)) {
-      const realType = type==='Other' ? (document.getElementById('doc-service-other')?.value||'Other') : type;
-      secInput.value = 'B) '+realType+' Work';
-    }
+}
+
+function addLineToSection(sectionId, line) {
+  const container=document.getElementById(sectionId+'-lines');
+  if(!container) return;
+  const lid='line-'+Date.now()+'-'+(lineCount++);
+  const vt=line?.valtype||'amount';
+  const vtOpts=[
+    {v:'amount',l:'Charged'},
+    {v:'waived',l:'Waived'},
+    {v:'free',l:'Free'},
+    {v:'covered',l:'Covered'},
+    {v:'tbc',l:'TBC'},
+  ].map(o=>`<option value="${o.v}"${o.v===vt?' selected':''}>${o.l}</option>`).join('');
+  const showAmt=vt==='amount';
+  const row=document.createElement('div');
+  row.id=lid;
+  row.style.cssText='display:grid;grid-template-columns:1fr 90px 100px 32px;gap:8px;padding:8px 12px;border-top:0.5px solid var(--border);align-items:center';
+  row.innerHTML=`
+    <input type="text" placeholder="Describe the work..." value="${escHtml(line?.desc||'')}"
+      style="border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-size:13px;background:var(--surface);color:var(--text);width:100%;outline:none;font-family:'Plus Jakarta Sans',sans-serif"
+      oninput="updateDocTotal()">
+    <select onchange="toggleLineAmt('${lid}',this.value)"
+      style="border:1.5px solid var(--border);border-radius:7px;padding:7px 8px;font-size:12px;background:var(--surface);color:var(--text);width:100%;outline:none;font-family:'Plus Jakarta Sans',sans-serif">
+      ${vtOpts}
+    </select>
+    <input type="number" id="${lid}-amt" placeholder="RM 0.00" min="0" step="0.01" value="${(vt==='amount'&&line?.unit)?line.unit:''}"
+      style="border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-size:13px;background:var(--surface);color:var(--text);width:100%;outline:none;font-family:'Plus Jakarta Sans',sans-serif;display:${showAmt?'block':'none'}"
+      oninput="updateDocTotal()">
+    <button onclick="document.getElementById('${lid}').remove();updateDocTotal()"
+      style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px">✕</button>`;
+  container.appendChild(row);
+  updateDocTotal();
+}
+
+function toggleLineAmt(lid, vt) {
+  const amt=document.getElementById(lid+'-amt');
+  if(amt){amt.style.display=vt==='amount'?'block':'none'; if(vt!=='amount') amt.value='';}
+  updateDocTotal();
+}
+
+let discLineCount=0;
+function addDocDiscount() {
+  const container=document.getElementById('doc-discount-lines');
+  if(!container) return;
+  const did='disc-'+Date.now()+'-'+(discLineCount++);
+  const row=document.createElement('div');
+  row.id=did;
+  row.style.cssText='display:flex;gap:8px;align-items:center;margin-top:8px;width:100%';
+  row.innerHTML=`
+    <input type="text" placeholder="Label (e.g. Warm Discount, Corporate Discount...)"
+      style="flex:1;border:1.5px solid var(--amber);border-radius:7px;padding:7px 9px;font-size:12px;background:var(--amber-light);color:var(--amber);outline:none;font-family:'Plus Jakarta Sans',sans-serif"
+      oninput="updateDocTotal()">
+    <span style="font-size:13px;color:var(--red);font-weight:600;white-space:nowrap">- RM</span>
+    <input type="number" placeholder="0.00" min="0" step="0.01"
+      style="width:90px;border:1.5px solid var(--amber);border-radius:7px;padding:7px 9px;font-size:13px;background:var(--amber-light);color:var(--red);outline:none;font-family:'Plus Jakarta Sans',sans-serif"
+      oninput="updateDocTotal()">
+    <button onclick="document.getElementById('${did}').remove();updateDocTotal()"
+      style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button>`;
+  container.appendChild(row);
+}
+
+function getDocSections() {
+  const lines=[];
+  document.querySelectorAll('.doc-section-group').forEach((sec,si)=>{
+    const letter=SECTION_LETTERS[si]||String.fromCharCode(65+si);
+    const nameInput=sec.querySelector('.sec-name-input');
+    const sectionName=nameInput?nameInput.value.trim():'';
+    sec.querySelectorAll('[id^="line-"]').forEach(row=>{
+      const descInput=row.querySelector('input[type="text"]');
+      const sel=row.querySelector('select');
+      const amtInput=row.querySelector('input[type="number"]');
+      const desc=descInput?descInput.value.trim():'';
+      const valtype=sel?sel.value:'amount';
+      const unit=amtInput?parseFloat(amtInput.value)||0:0;
+      lines.push({section:letter+') '+sectionName, desc, valtype, unit, amount:unit});
+    });
   });
+  return lines;
 }
 
-function getDocServiceType() {
-  const active = document.querySelector('.service-type-btn.active');
-  if(!active) return 'Plumbing';
-  if(active.dataset.type==='Other') return document.getElementById('doc-service-other')?.value||'Other';
-  return active.dataset.type;
+function getDocDiscounts() {
+  const discounts=[];
+  document.querySelectorAll('[id^="disc-"]').forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    const label=inputs[0]?.value.trim();
+    const amt=parseFloat(inputs[1]?.value)||0;
+    if(label&&amt>0) discounts.push({label,amount:amt});
+  });
+  return discounts;
 }
 
-function getDurationText() {
-  const sel = document.getElementById('doc-duration')?.value;
-  if(sel==='custom') return document.getElementById('doc-duration-custom')?.value||'';
-  return DURATION_MAP[sel]||sel||'';
-}
-
-function updateStartPreview(dateVal) {
-  const el = document.getElementById('doc-start-preview');
-  if(!el||!dateVal) return;
-  const d = new Date(dateVal);
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  el.textContent = `Can start on ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+function updateDocTotal() {
+  const lines=getDocSections();
+  const discounts=getDocDiscounts();
+  const sst=document.getElementById('doc-sst')?.value;
+  const sub=lines.filter(l=>l.valtype==='amount').reduce((s,l)=>s+(l.unit||0),0);
+  const discTotal=discounts.reduce((s,d)=>s+d.amount,0);
+  const sstAmt=sst==='yes'?sub*0.06:0;
+  const total=Math.max(0,sub+sstAmt-discTotal);
+  const s=document.getElementById('doc-subtotal'); if(s) s.textContent=fmtNum(sub);
+  const st=document.getElementById('doc-sst-amt'); if(st) st.textContent=fmtNum(sstAmt);
+  const dt=document.getElementById('doc-disc-amt'); if(dt) dt.textContent=fmtNum(discTotal);
+  const tt=document.getElementById('doc-total'); if(tt) tt.textContent=fmtNum(total);
+  if(document.getElementById('doc-sst')) document.getElementById('doc-sst').onchange=updateDocTotal;
 }
 
 async function openDocModal(mode, existingId) {
@@ -1464,78 +1677,59 @@ async function openDocModal(mode, existingId) {
   document.getElementById('doc-job').value='';
   document.getElementById('doc-sst').value='no';
   document.getElementById('doc-notes').value=mode==='invoice'?'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.':'Valid for 7 days. 50% deposit required to confirm job.';
-  document.getElementById('doc-lines').innerHTML='';
-  document.getElementById('doc-service-other').style.display='none';
-  docLineCount=0;
+  // Reset section builder
+  document.getElementById('doc-sections').innerHTML='';
+  document.getElementById('doc-discount-lines').innerHTML='';
+  sectionCount=0; lineCount=0; discLineCount=0;
 
-  // Reset service type to Plumbing
-  document.querySelectorAll('.service-type-btn').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';b.classList.remove('active');});
-  const plumbBtn=document.querySelector('.service-type-btn[data-type="Plumbing"]');
-  if(plumbBtn){plumbBtn.style.background='var(--blue-light)';plumbBtn.style.color='var(--blue)';plumbBtn.style.borderColor='var(--blue)';plumbBtn.classList.add('active');}
-
-  // Load clients (optional)
-  const clients=await q('clients',{order:'name'});
-  document.getElementById('doc-client').innerHTML='<option value="">Walk-in / no client selected</option>'+clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  // Reset client search
+  clearDocClient();
+  await loadDocClients();
 
   if(existingId){
     const col=mode==='quotation'?'quotations':'invoices';
     const docs=await q(col,{eq:{id:existingId}});
     if(docs.length){
       const d=docs[0];
-      document.getElementById('doc-client').value=d.client_id||'';
+      if(d.client_id){
+        const cl=docClients.find(c=>c.id===d.client_id);
+        if(cl) selectDocClient(cl.id,cl.name);
+      }
       document.getElementById('doc-date').value=d.date;
       document.getElementById('doc-due').value=d.due_date||'';
       document.getElementById('doc-job').value=d.job||'';
       document.getElementById('doc-sst').value=d.sst||'no';
       document.getElementById('doc-notes').value=d.notes||'';
-      (d.lines||[]).forEach(l=>addDocLine(l));
+      // Rebuild sections from saved lines
+      const sectionMap={};
+      (d.lines||[]).forEach(l=>{
+        const sec=l.section||'Work';
+        if(!sectionMap[sec]) sectionMap[sec]=[];
+        sectionMap[sec].push(l);
+      });
+      if(Object.keys(sectionMap).length){
+        Object.entries(sectionMap).forEach(([secName,lines])=>{
+          const namePart=secName.replace(/^[A-Z]\)\s*/,'');
+          addDocSection({name:namePart,lines});
+        });
+      } else {
+        addDocSection({name:'Preliminaries',defaultLine:{valtype:'waived'}});
+        addDocSection({name:'Plumbing Work'});
+      }
+      // Restore discounts
+      (d.discounts||[]).forEach(()=>addDocDiscount());
     }
   } else {
-    // Auto-add prelim as first line
-    addDocLine({section:'A) Preliminaries',desc:'General preliminaries including site visit.',valtype:'waived'});
-    addDocLine({section:'B) '+getDocServiceType()+' Work',desc:'',valtype:'amount'});
+    // Default: Prelim + Work section
+    addDocSection({name:'Preliminaries', defaultLine:{desc:'General preliminaries including site visit.',valtype:'waived',unit:100}});
+    addDocSection({name:'Plumbing Work'});
   }
   updateDocTotal();
-  document.getElementById('doc-sst').onchange=updateDocTotal;
   document.getElementById('docModal').classList.add('open');
 }
 function closeDocModal(){document.getElementById('docModal').classList.remove('open');}
 
-function addDocLine(line){
-  const id='line-'+Date.now()+'-'+(docLineCount++);
-  const vt = line&&line.valtype ? line.valtype : 'amount';
-  const vtOpts = ['amount','waived','free','covered','tbc','discount'].map(v=>`<option value="${v}"${v===vt?' selected':''}>${v.charAt(0).toUpperCase()+v.slice(1)}</option>`).join('');
-  const div=document.createElement('div');
-  div.className='item-line';
-  div.id=id;
-  div.innerHTML=`
-    <input type="text" placeholder="Section (e.g. B) Plumbing)" value="${escHtml(line&&line.section!=null?line.section:'')}" oninput="updateDocTotal()" style="font-size:11px;font-weight:600">
-    <input type="text" placeholder="Description of work..." value="${escHtml(line?line.desc||'':'')} " oninput="updateDocTotal()">
-    <select onchange="toggleDocLineAmount('${id}',this.value);updateDocTotal()">${vtOpts}</select>
-    <input type="number" placeholder="0.00" min="0" step="0.01" value="${line&&line.valtype==='amount'||line&&line.valtype==='discount'?line.unit||'':''}" oninput="updateDocTotal()" style="${vt!=='amount'&&vt!=='discount'?'display:none':''}">
-    <button class="remove-line" onclick="document.getElementById('${id}').remove();updateDocTotal()">✕</button>`;
-  document.getElementById('doc-lines').appendChild(div);
-  updateDocTotal();
-}
-function toggleDocLineAmount(id, vt){
-  const row=document.getElementById(id);
-  if(!row) return;
-  const amtInput=row.querySelectorAll('input')[1];
-  amtInput.style.display=(vt==='amount'||vt==='discount')?'':'none';
-  if(vt!=='amount'&&vt!=='discount') amtInput.value='';
-}
 function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function getDocLines(){
-  return [...document.querySelectorAll('#doc-lines .item-line')].map(row=>{
-    const inputs=row.querySelectorAll('input');
-    const sel=row.querySelector('select');
-    const section=inputs[0].value.trim();
-    const desc=inputs[1].value.trim();
-    const valtype=sel?sel.value:'amount';
-    const unit=parseFloat(inputs[1+1]?.value)||0;
-    return {section,desc,valtype,unit};
-  }).filter(l=>l.desc);
-}
 function updateDocTotal(){
   const lines=getDocLines();
   const sst=document.getElementById('doc-sst').value;
@@ -1553,10 +1747,19 @@ function updateDocTotal(){
   document.getElementById('doc-sst').onchange=updateDocTotal;
 }
 
+function getDurationText() {
+  const sel = document.getElementById('doc-duration')?.value;
+  if(!sel) return '';
+  if(sel==='custom') return document.getElementById('doc-duration-custom')?.value||'';
+  const map = {'1day':'All work within 1 working day','1-2days':'All work within 1-2 working days','1-3days':'All work within 1-3 working days','3-5days':'All work within 3-5 working days','1week':'All work within 1 week','1-2weeks':'All work within 1-2 weeks','2-4weeks':'All work within 2-4 weeks','1-3months':'All work within 1-3 months'};
+  return map[sel]||sel||'';
+}
+
 async function saveDoc(){
-  const clientId=parseInt(document.getElementById('doc-client').value)||null;
-  const lines=getDocLines();
-  if(!lines.length) return alert('Please add at least one line item.');
+  const clientId=parseInt(document.getElementById('doc-client-id')?.value)||null;
+  const lines=getDocSections();
+  const discounts=getDocDiscounts();
+  if(!lines.length) return alert('Please add at least one line item with a description.');
   const col=docMode==='quotation'?'quotations':'invoices';
 
   // Generate Q-number in Alpha format: Q[YYYYMMDD]-3 or INV-[YYYYMMDD]
@@ -1585,7 +1788,7 @@ async function saveDoc(){
     status:docMode==='invoice'?'unpaid':'draft',
     paid_deposit:0,paid_balance:0,
     pay_terms:document.getElementById('doc-payterms').value,
-    service_type:getDocServiceType(),
+    discounts,
     duration:getDurationText(),
     start_info:(()=>{const d=document.getElementById('doc-start').value;if(!d)return '';const dt=new Date(d);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `Can start on ${dt.getDate()} ${mo[dt.getMonth()]} ${dt.getFullYear()}`;})()
   };
@@ -1733,15 +1936,22 @@ async function previewDoc(type,id){
 
   // Group lines by section
   let lastSection='';
-  const lineRows=lines.map(l=>{
+  const lineRows=lines.filter(l=>l.desc||l.section).map(l=>{
     let sectionHeader='';
     const sec=l.section||'';
-    if(sec&&sec!==lastSection){lastSection=sec;sectionHeader=`<tr><td colspan="3" style="padding:12px 10px 4px;font-weight:700;font-size:13px;background:#f7f6fb;border-bottom:1px solid #e4e2ef">${escHtml(sec)}</td></tr>`;}
-    const valDisplay = l.valtype==='amount'?'RM '+fmtNum(l.unit)
-      :l.valtype==='discount'?`<span style="color:#dc2626">-RM ${fmtNum(l.unit)}</span>`
-      :`<span style="color:#059669;font-weight:700">${(l.valtype||'').toUpperCase()}</span>`;
+    if(sec&&sec!==lastSection){
+      lastSection=sec;
+      sectionHeader=`<tr><td colspan="3" style="padding:10px 10px 4px;font-weight:700;font-size:13px;background:#f0eff5;border-bottom:1px solid #e4e2ef;border-top:1px solid #e4e2ef">${escHtml(sec)}</td></tr>`;
+    }
+    if(!l.desc) return sectionHeader;
+    const valDisplay = l.valtype==='amount'
+      ? (l.unit>0?'RM '+fmtNum(l.unit):'—')
+      : `<span style="color:#059669;font-weight:700;font-size:12px">${(l.valtype||'').toUpperCase()}</span>`;
     return sectionHeader+`<tr><td style="padding:8px 10px;font-size:12px;color:#16152a;line-height:1.5">${escHtml(l.desc||'')}</td><td style="text-align:center;padding:8px 10px;font-size:12px">1</td><td style="text-align:right;padding:8px 10px">${valDisplay}</td></tr>`;
   }).join('');
+
+  // Discount rows
+  const discountRows=(doc.discounts||[]).map(d=>`<tr><td colspan="2" style="text-align:right;padding:6px 10px;font-size:12px;color:#dc2626;font-style:italic">${escHtml(d.label||'Discount')}</td><td style="text-align:right;padding:6px 10px;color:#dc2626;font-weight:600">-RM ${fmtNum(d.amount)}</td></tr>`).join('');
 
   // Payment terms text
   const ptMap={
@@ -1787,7 +1997,7 @@ async function previewDoc(type,id){
         <tr><td colspan="3" style="padding:10px;font-weight:700;font-size:13px;background:#eeedf5;letter-spacing:.03em">${(doc.service_type||'PLUMBING').toUpperCase()} SERVICES</td></tr>
         ${doc.job?`<tr><td colspan="3" style="padding:6px 10px;font-size:12px;color:#5e5c78"><strong>Project:</strong> ${escHtml(doc.job)}</td></tr>`:''}
         ${lineRows}
-        ${discTotal>0?`<tr><td colspan="2" style="text-align:right;padding:8px 10px;font-size:12px;color:#dc2626;font-style:italic">Discount</td><td style="text-align:right;padding:8px 10px;color:#dc2626">-${fmtNum(discTotal)}</td></tr>`:''}
+        ${discountRows}
       </tbody>
     </table>
 
