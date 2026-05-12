@@ -1460,40 +1460,65 @@ function getExpenseLines(){
 }
 function closeTxModal(){document.getElementById('txModal').classList.remove('open');}
 async function saveTx(){
-  const desc=document.getElementById('tx-desc').value.trim();
-  const amount=parseFloat(document.getElementById('tx-amount').value);
-  if(!desc||!amount||amount<=0) return alert('Please fill in description and amount.');
-  const date=document.getElementById('tx-date').value;
-  const invoiceNum=document.getElementById('tx-invoice').value||null;
-  const row={type:document.getElementById('tx-type').value,date,description:desc,category:document.getElementById('tx-cat').value,amount,scheduled_date:document.getElementById('tx-scheduled').value||null,invoice_num:invoiceNum,notes:document.getElementById('tx-notes').value||null};
+  const desc = document.getElementById('tx-desc').value.trim();
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  if(!desc || !amount || amount<=0) return alert('Please fill in description and amount.');
+
+  const txType = document.getElementById('tx-type').value;
+  const date = document.getElementById('tx-date').value;
+  const cat = document.getElementById('tx-cat').value;
+  const invoiceNum = document.getElementById('tx-invoice').value||null;
+  const scheduled = document.getElementById('tx-scheduled').value||null;
+  const notes = document.getElementById('tx-notes').value||null;
+
+  const row = {type:txType, date, description:desc, category:cat, amount,
+    scheduled_date:scheduled, invoice_num:invoiceNum, notes};
+
   if(txEditId) {
-    await upd('transactions',txEditId,row);
-    await ins('audit_log',{action:'EDIT',table_name:'transactions',record_id:txEditId,description:'Transaction edited: '+desc,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    // Edit mode
+    await upd('transactions', txEditId, row);
+    // Fetch old value for history detail
+    const oldTx = await q('transactions',{eq:{id:txEditId}}).then(r=>r[0]).catch(()=>null);
+    const oldDesc = oldTx ? oldTx.description+' RM'+oldTx.amount : '—';
+    await ins('audit_log',{action:'EDIT',table_name:'transactions',record_id:txEditId,
+      description:oldDesc+' → '+desc+' RM'+amount,
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
   } else {
-    const saved = await ins('transactions',row);
-    await ins('audit_log',{action:'ADD',table_name:'transactions',record_id:saved?.id,description:'Transaction added: '+desc,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
-    // Save linked expense lines
-    const expLines=getExpenseLines();
-    if(expLines.length){
-      for(const exp of expLines){
-        const expRow={type:'out',date,description:exp.desc+' (linked: '+desc+')',category:exp.cat||'Materials',amount:exp.amount,scheduled_date:null,invoice_num:invoiceNum,notes:'Auto-linked expense'};
-        await ins('transactions',expRow);
-        await ins('audit_log',{action:'ADD',table_name:'transactions',description:'Linked expense: '+exp.desc,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    // New transaction
+    const saved = await ins('transactions', row);
+    const parentId = saved?.id;
+    await ins('audit_log',{action:'ADD',table_name:'transactions',record_id:parentId,
+      description:'Added '+txType.toUpperCase()+': '+desc+' RM'+amount,
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+
+    // Save linked expense lines (money out) - all awaited
+    const expLines = getExpenseLines();
+    if(expLines.length) {
+      for(const exp of expLines) {
+        const expDesc = exp.desc + ' [expense for: ' + desc + ']';
+        const expRow = {
+          type:'out', date, description:expDesc,
+          category:exp.cat||'Materials', amount:exp.amount,
+          scheduled_date:null, invoice_num:invoiceNum,
+          notes:'Linked expense — parent: '+desc
+        };
+        const savedExp = await ins('transactions', expRow);
+        await ins('audit_log',{action:'ADD',table_name:'transactions',record_id:savedExp?.id,
+          description:'Linked expense: '+exp.desc+' RM'+exp.amount,
+          done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
       }
     }
   }
-  txEditId=null;
+
+  txEditId = null;
   closeTxModal();
-  // Force month filter to show current month so new transactions appear
+  // Reset month filter to All so all new entries are visible
   const cfMonth = document.getElementById('cf-month');
-  if(cfMonth && cfMonth.value) {
-    const txDate = document.getElementById('tx-date')?.value||todate();
-    const txMonth = txDate.slice(0,7);
-    if(cfMonth.value !== txMonth) cfMonth.value = '';  // reset to show all
-  }
+  if(cfMonth) cfMonth.value = '';
   await renderCashflow();
   renderDashboard();
 }
+
 async function deleteTx(id){
   if(!confirm('Delete this transaction?')) return;
   await ins('audit_log',{action:'DELETE',table_name:'transactions',record_id:id,description:'Transaction deleted',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
@@ -1747,85 +1772,104 @@ function updateDocTotal() {
 }
 
 async function openDocModal(mode, existingId) {
-  docMode=mode;
-  document.getElementById('doc-modal-title').textContent=existingId?`Edit ${mode==='quotation'?'Quotation':'Invoice'}`:`New ${mode==='quotation'?'Quotation':'Invoice'}`;
-  document.getElementById('doc-save-btn').textContent=`Save ${mode==='quotation'?'Quotation':'Invoice'}`;
+  docMode = mode;
+  const isQuote = mode === 'quotation';
 
-  // Set today's date
+  // Set titles
+  document.getElementById('doc-modal-title').textContent = existingId
+    ? (isQuote ? 'Edit Quotation' : 'Edit Invoice')
+    : (isQuote ? 'New Quotation' : 'New Invoice');
+  document.getElementById('doc-save-btn').textContent = isQuote ? 'Save Quotation' : 'Save Invoice';
+
+  // Set defaults
   const today = todate();
-  document.getElementById('doc-date').value=today;
+  const dueDate = new Date(today); dueDate.setDate(dueDate.getDate()+7);
+  const startDate = new Date(today); startDate.setDate(startDate.getDate()+1);
 
-  // Auto set valid until = 7 days from today
-  const due = new Date(today);
-  due.setDate(due.getDate()+7);
-  document.getElementById('doc-due').value=due.toISOString().slice(0,10);
+  const setVal = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  setVal('doc-date', today);
+  setVal('doc-due', dueDate.toISOString().slice(0,10));
+  setVal('doc-start', startDate.toISOString().slice(0,10));
+  setVal('doc-duration', '1-3days');
+  setVal('doc-job', '');
+  setVal('doc-address', '');
+  setVal('doc-sst', 'no');
+  setVal('doc-notes', isQuote
+    ? 'Valid for 7 days. 50% deposit required to confirm job.'
+    : 'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.');
 
-  // Default start date = tomorrow
-  const start = new Date(today);
-  start.setDate(start.getDate()+1);
-  const startStr = start.toISOString().slice(0,10);
-  document.getElementById('doc-start').value=startStr;
-  updateStartPreview(startStr);
-  document.getElementById('doc-start').onchange=e=>updateStartPreview(e.target.value);
-
-  // Default duration
-  document.getElementById('doc-duration').value='1-3days';
+  updateStartPreview(startDate.toISOString().slice(0,10));
   toggleCustomDuration('1-3days');
 
-  document.getElementById('doc-job').value='';
-  document.getElementById('doc-sst').value='no';
-  document.getElementById('doc-notes').value=mode==='invoice'?'Payment terms: 50% deposit upon confirmation. Balance due on completion day or next business day.':'Valid for 7 days. 50% deposit required to confirm job.';
+  const startEl = document.getElementById('doc-start');
+  if(startEl) startEl.onchange = e => updateStartPreview(e.target.value);
+
   // Reset section builder
-  document.getElementById('doc-sections').innerHTML='';
-  document.getElementById('doc-discount-lines').innerHTML='';
-  sectionCount=0; lineCount=0; discLineCount=0;
+  const secEl = document.getElementById('doc-sections');
+  const discEl = document.getElementById('doc-discount-lines');
+  if(secEl) secEl.innerHTML = '';
+  if(discEl) discEl.innerHTML = '';
+  sectionCount = 0; lineCount = 0; discLineCount = 0;
 
   // Reset client search
   clearDocClient();
-  await loadDocClients();
 
-  if(existingId){
-    const col=mode==='quotation'?'quotations':'invoices';
-    const docs=await q(col,{eq:{id:existingId}});
-    if(docs.length){
-      const d=docs[0];
-      if(d.client_id){
-        const cl=docClients.find(c=>c.id===d.client_id);
-        if(cl) selectDocClient(cl.id,cl.name);
-      }
-      document.getElementById('doc-date').value=d.date;
-      document.getElementById('doc-due').value=d.due_date||'';
-      document.getElementById('doc-job').value=d.job||'';
-      document.getElementById('doc-sst').value=d.sst||'no';
-      document.getElementById('doc-notes').value=d.notes||'';
-      if(document.getElementById('doc-address')) document.getElementById('doc-address').value=d.address||'';
-      // Rebuild sections from saved lines
-      const sectionMap={};
-      (d.lines||[]).forEach(l=>{
-        const sec=l.section||'Work';
-        if(!sectionMap[sec]) sectionMap[sec]=[];
-        sectionMap[sec].push(l);
-      });
-      if(Object.keys(sectionMap).length){
-        Object.entries(sectionMap).forEach(([secName,lines])=>{
-          const namePart=secName.replace(/^[A-Z]\)\s*/,'');
-          addDocSection({name:namePart,lines});
+  // Load clients - with error handling
+  try { await loadDocClients(); } catch(e) { console.warn('Could not load clients:', e); }
+
+  // Populate client dropdown
+  const clientSearch = document.getElementById('doc-client-search');
+  if(clientSearch) clientSearch.value = '';
+
+  if(existingId) {
+    // Edit mode - load existing doc
+    try {
+      const col = isQuote ? 'quotations' : 'invoices';
+      const docs = await q(col, {eq:{id:existingId}});
+      if(docs.length) {
+        const d = docs[0];
+        if(d.client_id) {
+          const cl = docClients.find(c => c.id === d.client_id);
+          if(cl) selectDocClient(cl.id, cl.name);
+        }
+        setVal('doc-date', d.date||today);
+        setVal('doc-due', d.due_date||'');
+        setVal('doc-job', d.job||'');
+        setVal('doc-address', d.address||'');
+        setVal('doc-sst', d.sst||'no');
+        setVal('doc-notes', d.notes||'');
+        // Rebuild sections
+        const sectionMap = {};
+        (d.lines||[]).forEach(l => {
+          const sec = l.section || 'Work';
+          if(!sectionMap[sec]) sectionMap[sec] = [];
+          sectionMap[sec].push(l);
         });
-      } else {
-        addDocSection({name:'Preliminaries',defaultLine:{valtype:'waived'}});
-        addDocSection({name:'Plumbing Work'});
+        if(Object.keys(sectionMap).length) {
+          Object.entries(sectionMap).forEach(([secName, lines]) => {
+            const namePart = secName.replace(/^[A-Z]\)\s*/, '');
+            addDocSection({name: namePart, lines});
+          });
+        } else {
+          addDocSection({name:'Preliminaries', defaultLine:{valtype:'waived'}});
+          addDocSection({name:'Plumbing Work'});
+        }
+        (d.discounts||[]).forEach(disc => addDocDiscount());
       }
-      // Restore discounts
-      (d.discounts||[]).forEach(()=>addDocDiscount());
-    }
+    } catch(e) { console.error('Error loading doc:', e); }
   } else {
-    // Default: Prelim + Work section
+    // New doc - add default sections
     addDocSection({name:'Preliminaries', defaultLine:{desc:'General preliminaries including site visit.',valtype:'waived',unit:100}});
     addDocSection({name:'Plumbing Work'});
   }
+
   updateDocTotal();
-  document.getElementById('docModal').classList.add('open');
+  // Show modal
+  const modal = document.getElementById('docModal');
+  if(modal) modal.classList.add('open');
+  else console.error('docModal element not found!');
 }
+
 function closeDocModal(){document.getElementById('docModal').classList.remove('open');}
 
 function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1893,7 +1937,13 @@ async function saveDoc(){
     start_info:(()=>{const d=document.getElementById('doc-start').value;if(!d)return '';const dt=new Date(d);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `Can start on ${dt.getDate()} ${mo[dt.getMonth()]} ${dt.getFullYear()}`;})()
   };
   const saved=await ins(col,row);
-  if(saved){closeDocModal();docMode==='quotation'?renderQuotations():renderInvoices();}
+  if(saved){
+    await ins('audit_log',{action:'ADD',table_name:col,record_id:saved.id,
+      description:(isQuote?'Quotation':'Invoice')+' created: '+row.num+(row.client_id?' for client #'+row.client_id:''),
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    closeDocModal();
+    docMode==='quotation'?renderQuotations():renderInvoices();
+  }
 }
 
 // ── QUOTATIONS ────────────────────────────────────────────
@@ -2008,6 +2058,9 @@ async function recordPayment(id,total,paid){
   const recNum=await nextNum('receipts','num','REC');
   await ins('receipts',{num:recNum,invoice_num:inv.num,invoice_id:id,client_id:inv.client_id,date:todate(),amount:amt,type:newStatus==='paid'?'full':type,notes:type==='deposit'?'50% deposit received. Balance due on completion.':'Payment received. Thank you!'});
 
+  await ins('audit_log',{action:'STATUS_CHANGE',table_name:'invoices',record_id:id,
+    description:`Payment of RM${fmtNum(amt)} recorded (${type}) → Status: ${newStatus} — ${inv.num}`,
+    done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
   alert(`Payment of ${fmt(amt)} recorded!\nReceipt ${recNum} auto-generated.\nTransaction added to cash flow.`);
   renderInvoices();
 }
@@ -2238,6 +2291,7 @@ async function renderClients(){
         <td style="font-family:'DM Mono',monospace;text-align:center">${cInvs.length}</td>
         <td style="font-family:'DM Mono',monospace;color:${outstanding>0?'var(--red)':'var(--text2)'}">${fmt(outstanding)}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="editClientModal(${c.id})">✏️ Edit</button>
           <button class="btn btn-sm" onclick="openDocForClient(${c.id},'${escHtml(c.name)}','quotation')">📋 Quote</button>
           <button class="btn btn-sm btn-primary" onclick="openDocForClient(${c.id},'${escHtml(c.name)}','invoice')">🧾 Invoice</button>
           <button class="btn btn-sm btn-danger" onclick="deleteClient(${c.id})">🗑</button>
@@ -2245,15 +2299,48 @@ async function renderClients(){
       </tr>`;
     }).join('')}</tbody></table>`:'<div class="empty"><p>No clients yet. Click "+ Add Client" to add your first client.</p></div>';
 }
+let clientEditId = null;
+
 function openClientModal(){
+  clientEditId = null;
   ['cl-name','cl-phone','cl-email','cl-addr','cl-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('client-modal-title').textContent = 'Add Client';
+  document.getElementById('clientModal').classList.add('open');
+}
+
+async function editClientModal(id){
+  const clients = await q('clients',{eq:{id}});
+  if(!clients.length) return;
+  const c = clients[0];
+  clientEditId = id;
+  document.getElementById('cl-name').value = c.name||'';
+  document.getElementById('cl-phone').value = c.phone||'';
+  document.getElementById('cl-email').value = c.email||'';
+  document.getElementById('cl-addr').value = c.addr||'';
+  document.getElementById('cl-notes').value = c.notes||'';
+  document.getElementById('client-modal-title').textContent = 'Edit Client';
   document.getElementById('clientModal').classList.add('open');
 }
 async function saveClient(){
-  const name=document.getElementById('cl-name').value.trim();
-  if(!name)return alert('Name is required.');
-  const saved=await ins('clients',{name,phone:document.getElementById('cl-phone').value,email:document.getElementById('cl-email').value,addr:document.getElementById('cl-addr').value,notes:document.getElementById('cl-notes').value});
-  await ins('audit_log',{action:'ADD',table_name:'clients',record_id:saved?.id,description:'Client added: '+name,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  const name = document.getElementById('cl-name').value.trim();
+  if(!name) return alert('Name is required.');
+  const data = {
+    name,
+    phone: document.getElementById('cl-phone').value,
+    email: document.getElementById('cl-email').value,
+    addr: document.getElementById('cl-addr').value,
+    notes: document.getElementById('cl-notes').value
+  };
+  if(clientEditId) {
+    await upd('clients', clientEditId, data);
+    await ins('audit_log',{action:'EDIT',table_name:'clients',record_id:clientEditId,
+      description:'Client edited: '+name,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    clientEditId = null;
+  } else {
+    const saved = await ins('clients', data);
+    await ins('audit_log',{action:'ADD',table_name:'clients',record_id:saved?.id,
+      description:'Client added: '+name,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  }
   document.getElementById('clientModal').classList.remove('open');
   renderClients();
 }
@@ -2531,37 +2618,58 @@ async function renderHistory() {
   const action = document.getElementById('hist-action')?.value||'';
   const table = document.getElementById('hist-table')?.value||'';
   let logs = await q('audit_log',{order:'done_at',asc:false});
+  if(!logs.length) {
+    document.getElementById('history-table').innerHTML =
+      '<div class="empty"><p>No activity recorded yet.<br>Every add, edit, delete and status change will appear here.</p></div>';
+    return;
+  }
   if(action) logs = logs.filter(l=>l.action===action);
   if(table) logs = logs.filter(l=>l.table_name===table);
 
-  const actionBadge = a => {
-    const m={ADD:'badge-green',EDIT:'badge-blue',DELETE:'badge-red',STATUS_CHANGE:'badge-amber'};
-    const labels={ADD:'Added',EDIT:'Edited',DELETE:'Deleted',STATUS_CHANGE:'Status'};
-    return `<span class="badge ${m[a]||'badge-gray'}">${labels[a]||a}</span>`;
-  };
-  const moduleLabel = t => ({transactions:'Cash Flow',quotations:'Quotations',invoices:'Invoices',clients:'Clients',jobs:'Jobs',staff:'Staff',receipts:'Receipts'}[t]||t||'System');
+  const actionColors = {ADD:'var(--green)',EDIT:'var(--blue)',DELETE:'var(--red)',STATUS_CHANGE:'var(--amber)'};
+  const actionIcons  = {ADD:'＋',EDIT:'✏',DELETE:'🗑',STATUS_CHANGE:'↔'};
+  const actionLabels = {ADD:'Added',EDIT:'Edited',DELETE:'Deleted',STATUS_CHANGE:'Status changed'};
+  const moduleLabels = {transactions:'Cash Flow',quotations:'Quotations',invoices:'Invoices',
+    clients:'Clients',jobs:'Jobs',staff:'Staff',receipts:'Receipts'};
 
-  document.getElementById('history-table').innerHTML = logs.length ? `
+  document.getElementById('history-table').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
-    ${logs.map((l,i)=>{
+    ${logs.map(l => {
       const dt = l.done_at ? new Date(l.done_at) : null;
-      const dateStr = dt ? dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})+' · '+dt.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'}) : '—';
-      const colors = {ADD:'var(--green)',EDIT:'var(--blue)',DELETE:'var(--red)',STATUS_CHANGE:'var(--amber)'};
-      const icons = {ADD:'＋',EDIT:'✏',DELETE:'🗑',STATUS_CHANGE:'↔'};
-      const color = colors[l.action]||'var(--text3)';
+      const dateStr = dt
+        ? dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})
+          +' · '+dt.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})
+        : '—';
+      const color = actionColors[l.action]||'var(--text3)';
+      const icon  = actionIcons[l.action]||'•';
+      const label = actionLabels[l.action]||l.action;
+      const module = moduleLabels[l.table_name]||l.table_name||'System';
+
+      // Parse description for "from → to" display
+      const desc = l.description||'—';
+      const hasArrow = desc.includes(' → ');
+      let mainDesc = desc;
+      let changeDetail = '';
+      if(hasArrow) {
+        const parts = desc.split(' → ');
+        mainDesc = parts[0];
+        changeDetail = parts.slice(1).join(' → ');
+      }
+
       return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
-        <div style="width:32px;height:32px;border-radius:8px;background:${color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${icons[l.action]||'•'}</div>
+        <div style="width:34px;height:34px;border-radius:8px;background:${color}18;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:${color}">${icon}</div>
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
-            ${actionBadge(l.action)}
-            <span style="background:var(--surface2);color:var(--text2);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${moduleLabel(l.table_name)}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="background:${color}18;color:${color};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${label}</span>
+            <span style="background:var(--surface2);color:var(--text2);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${module}</span>
           </div>
-          <div style="font-size:13px;color:var(--text);font-weight:500;margin-bottom:2px">${l.description||'—'}</div>
-          <div style="font-size:11px;color:var(--text3)">${dateStr} · by ${l.done_by||'Owner'}</div>
+          <div style="font-size:13px;color:var(--text);font-weight:500;margin-bottom:${changeDetail?'4px':'0'}">${mainDesc}</div>
+          ${changeDetail ? `<div style="font-size:12px;color:var(--text2);background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:'DM Mono',monospace">→ ${changeDetail}</div>` : ''}
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">${dateStr} · by ${l.done_by||'Owner'}</div>
         </div>
       </div>`;
     }).join('')}
-    </div>` : '<div class="empty"><p>No activity recorded yet.<br>Actions like adding, editing or deleting records will appear here.</p></div>';
+    </div>`;
 }
 
 async function clearHistory() {
