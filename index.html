@@ -223,48 +223,61 @@
 
   /* ── MOBILE ── */
   @media (max-width: 768px) {
-    /* Hide desktop sidebar, show mobile nav */
     .sidebar { display: none; }
     .mobile-nav { display: flex !important; }
     .mobile-header { display: flex !important; }
     .topbar { display: none; }
-    .main { padding-bottom: 72px; }
-
-    /* Layout */
+    .main { padding-bottom: 76px; }
     .app { flex-direction: column; }
-    .form-grid { grid-template-columns: 1fr; }
-    .form-grid.cols3 { grid-template-columns: 1fr; }
-    .grid2, .grid3, .kpi-strip, .dash-section { grid-template-columns: 1fr; }
-    .content { padding: 14px; padding-top: 70px; }
-    .card { padding: 14px; }
 
-    /* Line items: stack on mobile */
-    .item-line { grid-template-columns: 1fr 70px 36px; }
-    .item-line-header { grid-template-columns: 1fr 70px 36px; }
-    .item-line input:nth-child(2) { display: none; }
-    .item-line-header span:nth-child(2) { display: none; }
+    /* Spacing & layout */
+    .content { padding: 12px; padding-top: 68px; }
+    .card { padding: 14px; border-radius: 12px; margin-bottom: 12px; }
+    .grid2, .grid3, .kpi-strip, .dash-section { grid-template-columns: 1fr; gap: 10px; }
+    .form-grid, .form-grid.cols3 { grid-template-columns: 1fr; gap: 12px; }
 
-    /* Tables: horizontal scroll */
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { min-width: 500px; }
+    /* KPI 2-per-row */
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .kpi { padding: 12px; }
+    .kpi-val { font-size: 17px; }
+    .kpi-icon { width: 30px; height: 30px; border-radius: 8px; }
+    .kpi-label { font-size: 10px; }
 
-    /* Modals: full screen on mobile */
-    .modal-overlay { padding: 0; align-items: flex-end; }
-    .modal { max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 92vh; }
-    .modal-lg { max-width: 100%; }
+    /* Tables */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+    table { min-width: 480px; }
+    th, td { padding: 9px 10px; font-size: 12px; }
 
-    /* KPI cards: 2 per row */
-    .kpi-strip { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .kpi { padding: 14px; }
-    .kpi-val { font-size: 18px; }
-    .kpi-icon { width: 32px; height: 32px; }
+    /* Modals - slide up from bottom */
+    .modal-overlay { padding: 0; align-items: flex-end; background: rgba(0,0,0,.5); }
+    .modal, .modal-lg { max-width: 100%; width: 100%; border-radius: 20px 20px 0 0; max-height: 94vh; overflow-y: auto; }
+    .modal-header { padding: 16px 18px 0; }
+    .modal-body { padding: 16px 18px; }
+    .modal-footer { padding: 0 18px 24px; }
 
-    /* Charts: shorter on mobile */
-    .chart-area, canvas { max-height: 180px; }
+    /* Buttons */
+    .btn { font-size: 13px; padding: 8px 12px; }
+    .btn-sm { font-size: 12px; padding: 6px 10px; }
 
-    /* Doc line items on mobile */
-    .item-line { grid-template-columns: 1fr 80px 30px; gap: 6px; padding: 8px; }
-    .item-line-header { grid-template-columns: 1fr 80px 30px; }
+    /* Section line items on mobile */
+    .doc-section-group [style*="grid-template-columns:1fr 90px 100px 32px"] {
+      grid-template-columns: 1fr 80px 32px !important;
+    }
+    .doc-section-group [style*="grid-template-columns:1fr 90px 100px 32px"] input[type="number"] {
+      display: none;
+    }
+
+    /* Staff cards */
+    .staff-card { flex-direction: row; }
+
+    /* Charts smaller */
+    canvas { max-height: 160px !important; }
+
+    /* Insight bar */
+    #dash-insights > div { grid-template-columns: 1fr; }
+
+    /* Action button rows - wrap on mobile */
+    td div[style*="display:flex"] { flex-wrap: wrap; gap: 4px !important; }
   }
 </style>
 
@@ -309,7 +322,7 @@
   .lock-key:active { transform:scale(.93);background:rgba(255,255,255,.2); }
 </style>
 <script>
-  const PASSCODE = '1282'; // ← Change this to your private code
+  const PASSCODE = '1234'; // ← Change this to your private code
   let lockInput = '';
   const SESSION_KEY = 'alpha_unlocked';
 
@@ -382,6 +395,7 @@
   <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:8px 8px 6px;margin-top:8px">Team & Reports</div>
   <button class="mob-nav-btn" onclick="mobileNav('staff')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>Staff</button>
   <button class="mob-nav-btn" onclick="mobileNav('reports')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Reports</button>
+  <button class="mob-nav-btn" onclick="mobileNav('history')"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</button>
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -460,6 +474,10 @@
       <button class="nav-item" onclick="showPage('reports')">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Reports
+      </button>
+      <button class="nav-item" onclick="showPage('history')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        History
       </button>
     </div>
   </nav>
@@ -649,6 +667,35 @@
         </div>
       </div>
 
+      <!-- HISTORY PAGE -->
+      <div class="page" id="page-history">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-size:13px;color:var(--text2)">All system activity — additions, edits, deletions</div>
+            <button class="btn btn-sm btn-danger" onclick="clearHistory()">Clear history</button>
+          </div>
+          <div class="filter-bar">
+            <select id="hist-action" onchange="renderHistory()" aria-label="Filter by action">
+              <option value="">All actions</option>
+              <option value="ADD">Added</option>
+              <option value="EDIT">Edited</option>
+              <option value="DELETE">Deleted</option>
+              <option value="STATUS_CHANGE">Status changed</option>
+            </select>
+            <select id="hist-table" onchange="renderHistory()" aria-label="Filter by module">
+              <option value="">All modules</option>
+              <option value="transactions">Transactions</option>
+              <option value="quotations">Quotations</option>
+              <option value="invoices">Invoices</option>
+              <option value="clients">Clients</option>
+              <option value="jobs">Jobs</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+          <div class="table-wrap" id="history-table"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -725,6 +772,7 @@
         <div class="form-group"><label for="doc-date">Date</label><input type="date" id="doc-date"></div>
 
         <div class="form-group form-full"><label for="doc-job">Project description</label><input type="text" id="doc-job" placeholder="e.g. Plumbing works — pipe replacement & waterproofing"></div>
+        <div class="form-group form-full"><label for="doc-address">Site address <span style="font-size:11px;color:var(--text3);font-weight:400">(optional — appears on document)</span></label><textarea id="doc-address" rows="2" placeholder="e.g. Unit 3A, Taman Setapak, 53100 KL"></textarea></div>
 
         <div class="form-group">
           <label for="doc-due">Valid until <span style="font-size:11px;color:var(--text3);font-weight:400">(auto: +7 days)</span></label>
@@ -942,7 +990,7 @@ const statusBadge = s => {
 };
 
 // NAVIGATION
-const pageTitles = {dashboard:'Dashboard',cashflow:'Cash Flow',quotations:'Quotations',invoices:'Invoices',receipts:'Receipts',clients:'Clients',jobs:'Jobs',staff:'Staff',reports:'Reports'};
+const pageTitles = {dashboard:'Dashboard',cashflow:'Cash Flow',quotations:'Quotations',invoices:'Invoices',receipts:'Receipts',clients:'Clients',jobs:'Jobs',staff:'Staff',reports:'Reports',history:'Activity History'};
 const topbarBtns = {
   cashflow: `<button class="btn btn-primary btn-sm" onclick="openTxModal()">+ Transaction</button>`,
   quotations: `<button class="btn btn-primary btn-sm" onclick="openDocModal('quotation')">+ New Quote</button>`,
@@ -965,7 +1013,7 @@ function showPage(p) {
   // Sync mobile header
   const mobileTitle = document.getElementById('mobile-page-title');
   if(mobileTitle) mobileTitle.textContent = pageTitles[p]||p;
-  const renders = {dashboard:renderDashboard,cashflow:renderCashflow,quotations:renderQuotations,invoices:renderInvoices,receipts:renderReceipts,clients:renderClients,jobs:renderJobs,staff:renderStaff,reports:renderReports};
+  const renders = {dashboard:renderDashboard,cashflow:renderCashflow,quotations:renderQuotations,invoices:renderInvoices,receipts:renderReceipts,clients:renderClients,jobs:renderJobs,staff:renderStaff,reports:renderReports,history:renderHistory};
   if(renders[p]) renders[p]();
 }
 
@@ -1348,7 +1396,12 @@ async function renderCashflow() {
       <td><span class="badge ${t.type==='in'?'badge-green':'badge-red'}">${t.type==='in'?'In':'Out'}</span></td>
       <td style="font-size:12px;color:var(--text3)">${t.scheduled_date||'—'}</td>
       <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace;color:${t.type==='in'?'var(--green)':'var(--red)'}">${t.type==='in'?'+':'-'}${fmt(t.amount)}</td>
-      <td><button class="btn btn-sm btn-ghost" onclick="deleteTx(${t.id})">✕</button></td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button class="btn btn-sm" onclick="editTxModal(${t.id})" title="Edit" style="padding:5px 8px">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTx(${t.id})" title="Delete" style="padding:5px 8px">🗑</button>
+        </div>
+      </td>
     </tr>`).join('')}</tbody></table>` : '<div class="empty"><p>No transactions yet. Click "+ Transaction" to add one.</p></div>';
 
   await renderTargets();
@@ -1410,19 +1463,54 @@ async function saveTx(){
   const date=document.getElementById('tx-date').value;
   const invoiceNum=document.getElementById('tx-invoice').value||null;
   const row={type:document.getElementById('tx-type').value,date,description:desc,category:document.getElementById('tx-cat').value,amount,scheduled_date:document.getElementById('tx-scheduled').value||null,invoice_num:invoiceNum,notes:document.getElementById('tx-notes').value||null};
-  await ins('transactions',row);
-  // Save linked expense lines
-  const expLines=getExpenseLines();
-  if(expLines.length){
-    for(const exp of expLines){
-      await ins('transactions',{type:'out',date,description:exp.desc+' (linked to: '+desc+')',category:exp.cat||'Materials',amount:exp.amount,scheduled_date:null,invoice_num:invoiceNum,notes:'Auto-linked expense'});
+  if(txEditId) {
+    await upd('transactions',txEditId,row);
+    await ins('audit_log',{action:'EDIT',table_name:'transactions',record_id:txEditId,description:'Transaction edited: '+desc,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  } else {
+    const saved = await ins('transactions',row);
+    await ins('audit_log',{action:'ADD',table_name:'transactions',record_id:saved?.id,description:'Transaction added: '+desc,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    // Save linked expense lines
+    const expLines=getExpenseLines();
+    if(expLines.length){
+      for(const exp of expLines){
+        const expRow={type:'out',date,description:exp.desc+' (linked: '+desc+')',category:exp.cat||'Materials',amount:exp.amount,scheduled_date:null,invoice_num:invoiceNum,notes:'Auto-linked expense'};
+        await ins('transactions',expRow);
+        await ins('audit_log',{action:'ADD',table_name:'transactions',description:'Linked expense: '+exp.desc,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+      }
     }
   }
+  txEditId=null;
   closeTxModal();
   renderCashflow();
   renderDashboard();
 }
-async function deleteTx(id){if(!confirm('Delete this transaction?'))return;await del('transactions',id);renderCashflow();}
+async function deleteTx(id){
+  if(!confirm('Delete this transaction?')) return;
+  await ins('audit_log',{action:'DELETE',table_name:'transactions',record_id:id,description:'Transaction deleted',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  await del('transactions',id);
+  renderCashflow();
+  renderDashboard();
+}
+
+async function editTxModal(id) {
+  const txs = await q('transactions',{eq:{id}});
+  if(!txs.length) return;
+  const t = txs[0];
+  txEditId = id;
+  document.getElementById('tx-modal-title').textContent = 'Edit Transaction';
+  document.getElementById('tx-type').value = t.type;
+  document.getElementById('tx-date').value = t.date;
+  document.getElementById('tx-desc').value = t.description||'';
+  document.getElementById('tx-amount').value = t.amount;
+  document.getElementById('tx-scheduled').value = t.scheduled_date||'';
+  document.getElementById('tx-invoice').value = t.invoice_num||'';
+  document.getElementById('tx-notes').value = t.notes||'';
+  document.getElementById('expense-lines').innerHTML='';
+  document.getElementById('expense-section').style.display='none';
+  updateTxCats();
+  document.getElementById('tx-cat').value = t.category||'';
+  document.getElementById('txModal').classList.add('open');
+}
 
 async function renderTargets(){
   const now=thisMonth();
@@ -1700,6 +1788,7 @@ async function openDocModal(mode, existingId) {
       document.getElementById('doc-job').value=d.job||'';
       document.getElementById('doc-sst').value=d.sst||'no';
       document.getElementById('doc-notes').value=d.notes||'';
+      if(document.getElementById('doc-address')) document.getElementById('doc-address').value=d.address||'';
       // Rebuild sections from saved lines
       const sectionMap={};
       (d.lines||[]).forEach(l=>{
@@ -1785,6 +1874,7 @@ async function saveDoc(){
     lines,
     sst:document.getElementById('doc-sst').value,
     notes:document.getElementById('doc-notes').value,
+    address:document.getElementById('doc-address')?.value||'',
     status:docMode==='invoice'?'unpaid':'draft',
     paid_deposit:0,paid_balance:0,
     pay_terms:document.getElementById('doc-payterms').value,
@@ -1814,7 +1904,7 @@ async function renderQuotations(){
         <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(total)}</td>
         <td>${statusBadge(q.status)}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-ghost" onclick="previewDoc('quotation',${q.id})">Preview / PDF</button>
+          <button class="btn btn-sm" onclick="previewDoc('quotation',${q.id})">👁 Preview</button>
           <button class="btn btn-sm" onclick="convertToInvoice(${q.id})">→ Invoice</button>
           <select class="btn btn-sm" style="padding:4px" onchange="updateDocStatus('quotations',${q.id},this.value)">
             <option${q.status==='draft'?' selected':''} value="draft">Draft</option>
@@ -1822,10 +1912,29 @@ async function renderQuotations(){
             <option${q.status==='accepted'?' selected':''} value="accepted">Accepted</option>
             <option${q.status==='declined'?' selected':''} value="declined">Declined</option>
           </select>
+          <button class="btn btn-sm btn-danger" onclick="deleteQuot(${q.id})" title="Delete">🗑</button>
         </div></td></tr>`;
     }).join('')}</tbody></table>`:'<div class="empty"><p>No quotations yet. Click "+ New Quote" to create one.</p></div>';
 }
-async function updateDocStatus(table,id,status){await upd(table,id,{status});if(table==='quotations')renderQuotations();else renderInvoices();}
+async function updateDocStatus(table,id,status){
+  await upd(table,id,{status});
+  await ins('audit_log',{action:'STATUS_CHANGE',table_name:table,record_id:id,description:'Status changed to '+status,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  if(table==='quotations') renderQuotations(); else renderInvoices();
+}
+
+async function deleteQuot(id) {
+  if(!confirm('Delete this quotation?')) return;
+  await ins('audit_log',{action:'DELETE',table_name:'quotations',record_id:id,description:'Quotation deleted',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  await del('quotations',id);
+  renderQuotations();
+}
+
+async function deleteInv(id) {
+  if(!confirm('Delete this invoice? This cannot be undone.')) return;
+  await ins('audit_log',{action:'DELETE',table_name:'invoices',record_id:id,description:'Invoice deleted',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  await del('invoices',id);
+  renderInvoices();
+}
 async function convertToInvoice(id){
   if(!confirm('Convert this quotation to an invoice?'))return;
   const quots=await q('quotations',{eq:{id}});
@@ -1858,8 +1967,9 @@ async function renderInvoices(){
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green)">${fmt(paid)}</td>
         <td>${statusBadge(isOverdue?'overdue':inv.status)}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-ghost" onclick="previewDoc('invoice',${inv.id})">Preview / PDF</button>
-          <button class="btn btn-sm" onclick="recordPayment(${inv.id},${total},${paid})">Record payment</button>
+          <button class="btn btn-sm" onclick="previewDoc('invoice',${inv.id})">👁 Preview</button>
+          <button class="btn btn-sm btn-primary" onclick="recordPayment(${inv.id},${total},${paid})">💰 Record payment</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteInv(${inv.id})">🗑</button>
         </div></td></tr>`;
     }).join('')}</tbody></table>`:'<div class="empty"><p>No invoices yet. Click "+ New Invoice" or convert a quotation.</p></div>';
 }
@@ -1893,6 +2003,12 @@ async function recordPayment(id,total,paid){
 }
 
 // ── RECEIPTS ──────────────────────────────────────────────
+async function deleteReceipt(id){
+  if(!confirm('Delete this receipt?')) return;
+  await del('receipts',id);
+  renderReceipts();
+}
+
 async function renderReceipts(){
   const recs=await q('receipts',{order:'id',asc:false});
   const clients=await q('clients');
@@ -1906,7 +2022,10 @@ async function renderReceipts(){
       <td style="font-size:12px;color:var(--text3)">${r.date}</td>
       <td><span class="badge ${r.type==='full'?'badge-green':r.type==='deposit'?'badge-amber':'badge-blue'}">${r.type}</span></td>
       <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${fmt(r.amount)}</td>
-      <td><button class="btn btn-sm btn-ghost" onclick="previewReceipt(${r.id})">Preview / PDF</button></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="previewReceipt(${r.id})">👁 View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteReceipt(${r.id})">🗑</button>
+      </div></td>
     </tr>`).join('')}</tbody></table>`:'<div class="empty"><p>Receipts are auto-generated when you record payment on an invoice.</p></div>';
 }
 
@@ -1976,7 +2095,8 @@ async function previewDoc(type,id){
       <div class="doc-info">
         <div style="font-size:11px;color:#5e5c78;line-height:2">
           <strong>To:</strong> ${client.name||'PIC'}<br>
-          ${client.addr?`${escHtml(client.addr)}<br>`:''}
+          ${doc.address?escHtml(doc.address)+'<br>':client.addr?escHtml(client.addr)+'<br>':''}
+          ${client.phone?client.phone:''}
         </div>
         <div style="margin-top:8px;font-size:11px;color:#5e5c78;line-height:2">
           <strong>Quotation No:</strong> ${doc.num}<br>
@@ -2107,9 +2227,10 @@ async function renderClients(){
         <td style="font-size:12px;color:var(--text2)">${c.addr||'—'}</td>
         <td style="font-family:'DM Mono',monospace;text-align:center">${cInvs.length}</td>
         <td style="font-family:'DM Mono',monospace;color:${outstanding>0?'var(--red)':'var(--text2)'}">${fmt(outstanding)}</td>
-        <td><div style="display:flex;gap:4px">
-          <button class="btn btn-sm btn-ghost" onclick="openDocModal('invoice');setTimeout(()=>{document.getElementById('doc-client').value='${c.id}'},300)">New invoice</button>
-          <button class="btn btn-sm btn-ghost btn-danger" onclick="deleteClient(${c.id})">Remove</button>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="openDocForClient(${c.id},'${escHtml(c.name)}','quotation')">📋 Quote</button>
+          <button class="btn btn-sm btn-primary" onclick="openDocForClient(${c.id},'${escHtml(c.name)}','invoice')">🧾 Invoice</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteClient(${c.id})">🗑</button>
         </div></td>
       </tr>`;
     }).join('')}</tbody></table>`:'<div class="empty"><p>No clients yet. Click "+ Add Client" to add your first client.</p></div>';
@@ -2125,7 +2246,18 @@ async function saveClient(){
   document.getElementById('clientModal').classList.remove('open');
   renderClients();
 }
-async function deleteClient(id){if(!confirm('Delete this client?'))return;await del('clients',id);renderClients();}
+async function deleteClient(id){
+  if(!confirm('Delete this client?')) return;
+  await ins('audit_log',{action:'DELETE',table_name:'clients',record_id:id,description:'Client deleted',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  await del('clients',id);
+  renderClients();
+}
+
+async function openDocForClient(clientId, clientName, mode) {
+  await openDocModal(mode);
+  // Pre-select the client in the search
+  setTimeout(()=>selectDocClient(clientId, clientName), 300);
+}
 
 // ── JOBS ──────────────────────────────────────────────────
 async function renderJobs(){
@@ -2153,7 +2285,10 @@ async function renderJobs(){
           <option${j.status==='cancelled'?' selected':''} value="cancelled">Cancelled</option>
         </select>
       </td>
-      <td><button class="btn btn-sm btn-ghost btn-danger" onclick="deleteJob(${j.id})">✕</button></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="editJobModal(${j.id})" title="Edit">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteJob(${j.id})" title="Delete">🗑</button>
+      </div></td>
     </tr>`).join('')}</tbody></table>`:'<div class="empty"><p>No jobs yet. Click "+ Add Job" to track your first job.</p></div>';
 }
 async function openJobModal(){
@@ -2168,17 +2303,49 @@ async function openJobModal(){
 async function saveJob(){
   const title=document.getElementById('jb-title').value.trim();
   if(!title)return alert('Job title required.');
+  const editId = document.getElementById('jobModal')._editId;
   const row={title,client_id:parseInt(document.getElementById('jb-client').value)||null,status:document.getElementById('jb-status').value,start_date:document.getElementById('jb-start').value||null,end_date:document.getElementById('jb-end').value||null,value:parseFloat(document.getElementById('jb-value').value)||0,invoice_num:document.getElementById('jb-invoice').value||null,notes:document.getElementById('jb-notes').value||null};
-  const saved=await ins('jobs',row);
-  if(saved){
-    const staffSel=document.getElementById('jb-staff');
-    const selected=[...staffSel.options].filter(o=>o.selected).map(o=>parseInt(o.value)).filter(Boolean);
-    await Promise.all(selected.map(sid=>ins('job_staff',{job_id:saved.id,staff_id:sid})));
-    document.getElementById('jobModal').classList.remove('open');
-    renderJobs();
+  if(editId){
+    await upd('jobs',editId,row);
+    await ins('audit_log',{action:'EDIT',table_name:'jobs',record_id:editId,description:'Job edited: '+title,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    document.getElementById('jobModal')._editId=null;
+  } else {
+    const saved=await ins('jobs',row);
+    if(saved){
+      const staffSel=document.getElementById('jb-staff');
+      const selected=[...staffSel.options].filter(o=>o.selected).map(o=>parseInt(o.value)).filter(Boolean);
+      await Promise.all(selected.map(sid=>ins('job_staff',{job_id:saved.id,staff_id:sid})));
+      await ins('audit_log',{action:'ADD',table_name:'jobs',record_id:saved.id,description:'Job added: '+title,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    }
   }
+  document.getElementById('jobModal').classList.remove('open');
+  renderJobs();
 }
-async function deleteJob(id){if(!confirm('Delete this job?'))return;await del('jobs',id);renderJobs();}
+async function deleteJob(id){
+  if(!confirm('Delete this job?')) return;
+  await ins('audit_log',{action:'DELETE',table_name:'jobs',record_id:id,description:'Job deleted',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  await del('jobs',id);
+  renderJobs();
+}
+
+async function editJobModal(id) {
+  const jobList = await q('jobs',{eq:{id}});
+  if(!jobList.length) return;
+  const j = jobList[0];
+  await openJobModal();
+  setTimeout(()=>{
+    document.getElementById('jb-title').value = j.title||'';
+    document.getElementById('jb-client').value = j.client_id||'';
+    document.getElementById('jb-status').value = j.status||'pending';
+    document.getElementById('jb-start').value = j.start_date||'';
+    document.getElementById('jb-end').value = j.end_date||'';
+    document.getElementById('jb-value').value = j.value||'';
+    document.getElementById('jb-invoice').value = j.invoice_num||'';
+    document.getElementById('jb-notes').value = j.notes||'';
+    document.getElementById('job-modal-title').textContent = 'Edit Job';
+    document.getElementById('jobModal')._editId = id;
+  },100);
+}
 
 // ── STAFF ─────────────────────────────────────────────────
 async function renderStaff(){
@@ -2201,7 +2368,7 @@ async function renderStaff(){
         <div class="staff-meta" style="margin-top:4px">${s.phone||''}</div>
         <div style="font-size:11px;color:var(--text2);margin-top:2px">${activeJobs} active job${activeJobs!==1?'s':''}</div>
       </div>
-      <button class="btn btn-sm btn-ghost btn-danger" onclick="deleteStaff(${s.id})" style="align-self:flex-start">✕</button>
+      <div style="display:flex;flex-direction:column;gap:4px"><button class="btn btn-sm" onclick="editStaffModal(${s.id})" style="align-self:flex-start">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteStaff(${s.id})" style="align-self:flex-start">🗑</button></div>
     </div>`;
   }).join('');
 }
@@ -2213,11 +2380,38 @@ function openStaffModal(){
 async function saveStaff(){
   const name=document.getElementById('sf-name').value.trim();
   if(!name)return alert('Name required.');
-  await ins('staff',{name,role:document.getElementById('sf-role').value,type:document.getElementById('sf-type').value,phone:document.getElementById('sf-phone').value,ic:document.getElementById('sf-ic').value,salary:parseFloat(document.getElementById('sf-salary').value)||0,start_date:document.getElementById('sf-start').value||null,notes:document.getElementById('sf-notes').value||null});
+  const editId=document.getElementById('staffModal')._editId;
+  const row={name,role:document.getElementById('sf-role').value,type:document.getElementById('sf-type').value,phone:document.getElementById('sf-phone').value,ic:document.getElementById('sf-ic').value,salary:parseFloat(document.getElementById('sf-salary').value)||0,start_date:document.getElementById('sf-start').value||null,notes:document.getElementById('sf-notes').value||null};
+  if(editId){await upd('staff',editId,row);document.getElementById('staffModal')._editId=null;}
+  else { await ins('staff',row); }
   document.getElementById('staffModal').classList.remove('open');
   renderStaff();
 }
-async function deleteStaff(id){if(!confirm('Remove this staff member?'))return;await del('staff',id);renderStaff();}
+async function deleteStaff(id){
+  if(!confirm('Remove this staff member?')) return;
+  await ins('audit_log',{action:'DELETE',table_name:'staff',record_id:id,description:'Staff removed',done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  await del('staff',id);
+  renderStaff();
+}
+
+async function editStaffModal(id){
+  const staffList=await q('staff',{eq:{id}});
+  if(!staffList.length) return;
+  const s=staffList[0];
+  openStaffModal();
+  setTimeout(()=>{
+    document.getElementById('sf-name').value=s.name||'';
+    document.getElementById('sf-role').value=s.role||'Plumber';
+    document.getElementById('sf-type').value=s.type||'fulltime';
+    document.getElementById('sf-phone').value=s.phone||'';
+    document.getElementById('sf-ic').value=s.ic||'';
+    document.getElementById('sf-salary').value=s.salary||'';
+    document.getElementById('sf-start').value=s.start_date||'';
+    document.getElementById('sf-notes').value=s.notes||'';
+    document.getElementById('staff-modal-title').textContent='Edit Staff';
+    document.getElementById('staffModal')._editId=id;
+  },100);
+}
 
 // ── REPORTS ───────────────────────────────────────────────
 async function renderReports(){
@@ -2310,6 +2504,44 @@ function handleMobileAdd() {
   };
   const action = actions[currentPage] || actions.dashboard;
   action();
+}
+
+// ── HISTORY / AUDIT LOG ──────────────────────────────────
+async function renderHistory() {
+  const action = document.getElementById('hist-action')?.value||'';
+  const table = document.getElementById('hist-table')?.value||'';
+  let logs = await q('audit_log',{order:'done_at',asc:false});
+  if(action) logs = logs.filter(l=>l.action===action);
+  if(table) logs = logs.filter(l=>l.table_name===table);
+
+  const actionBadge = a => {
+    const m={ADD:'badge-green',EDIT:'badge-blue',DELETE:'badge-red',STATUS_CHANGE:'badge-amber'};
+    const labels={ADD:'Added',EDIT:'Edited',DELETE:'Deleted',STATUS_CHANGE:'Status'};
+    return `<span class="badge ${m[a]||'badge-gray'}">${labels[a]||a}</span>`;
+  };
+  const moduleLabel = t => ({transactions:'Cash Flow',quotations:'Quotations',invoices:'Invoices',clients:'Clients',jobs:'Jobs',staff:'Staff',receipts:'Receipts'}[t]||t||'System');
+
+  document.getElementById('history-table').innerHTML = logs.length ? `<table>
+    <thead><tr><th>Date & time</th><th>Action</th><th>Module</th><th>Description</th><th>By</th></tr></thead>
+    <tbody>${logs.map(l=>{
+      const dt = l.done_at ? new Date(l.done_at) : null;
+      const dateStr = dt ? dt.toLocaleDateString('en-MY')+' '+dt.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'}) : '—';
+      return `<tr>
+        <td style="font-size:11px;color:var(--text2);white-space:nowrap">${dateStr}</td>
+        <td>${actionBadge(l.action)}</td>
+        <td><span class="badge badge-gray" style="font-size:10px">${moduleLabel(l.table_name)}</span></td>
+        <td style="font-size:12px">${l.description||'—'}</td>
+        <td style="font-size:12px;color:var(--text3)">${l.done_by||'Owner'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>` : '<div class="empty"><p>No activity recorded yet. Actions like adding, editing, or deleting records will appear here.</p></div>';
+}
+
+async function clearHistory() {
+  if(!confirm('Clear all activity history? This cannot be undone.')) return;
+  const logs = await q('audit_log');
+  await Promise.all(logs.map(l=>del('audit_log',l.id)));
+  renderHistory();
 }
 
 // ── INIT ──────────────────────────────────────────────────
