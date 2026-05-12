@@ -248,8 +248,8 @@
     table { min-width: 480px; }
     th, td { padding: 9px 10px; font-size: 12px; }
 
-    /* Modals - slide up from bottom */
-    .modal-overlay { padding: 0; align-items: flex-end; background: rgba(0,0,0,.5); }
+    /* Modals - slide up from bottom on mobile */
+    .modal-overlay.open { padding: 0; align-items: flex-end; }
     .modal, .modal-lg { max-width: 100%; width: 100%; border-radius: 20px 20px 0 0; max-height: 94vh; overflow-y: auto; }
     .modal-header { padding: 16px 18px 0; }
     .modal-body { padding: 16px 18px; }
@@ -1772,6 +1772,7 @@ function updateDocTotal() {
 }
 
 async function openDocModal(mode, existingId) {
+  console.log('[DocModal] Opening:', mode, existingId||'new');
   docMode = mode;
   const isQuote = mode === 'quotation';
 
@@ -1865,9 +1866,14 @@ async function openDocModal(mode, existingId) {
 
   updateDocTotal();
   // Show modal
+  console.log('[DocModal] Opening modal element...');
   const modal = document.getElementById('docModal');
-  if(modal) modal.classList.add('open');
-  else console.error('docModal element not found!');
+  if(modal) {
+    modal.classList.add('open');
+    console.log('[DocModal] Modal opened successfully');
+  } else {
+    console.error('[DocModal] ERROR: docModal element not found!');
+  }
 }
 
 function closeDocModal(){document.getElementById('docModal').classList.remove('open');}
@@ -2333,8 +2339,15 @@ async function saveClient(){
   };
   if(clientEditId) {
     await upd('clients', clientEditId, data);
+    const oldClient = await q('clients',{eq:{id:clientEditId}}).then(r=>r[0]).catch(()=>null);
+    const oldName = oldClient?.name||'—';
+    const changes = [];
+    if(oldClient?.name !== name) changes.push('Name: '+oldName+' → '+name);
+    if(oldClient?.phone !== data.phone && data.phone) changes.push('Phone: '+(oldClient?.phone||'—')+' → '+data.phone);
+    if(oldClient?.email !== data.email && data.email) changes.push('Email: '+(oldClient?.email||'—')+' → '+data.email);
     await ins('audit_log',{action:'EDIT',table_name:'clients',record_id:clientEditId,
-      description:'Client edited: '+name,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+      description:'Client edited: '+(changes.length?changes.join(', '):name),
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
     clientEditId = null;
   } else {
     const saved = await ins('clients', data);
@@ -2409,8 +2422,15 @@ async function saveJob(){
   const editId = document.getElementById('jobModal')._editId;
   const row={title,client_id:parseInt(document.getElementById('jb-client').value)||null,status:document.getElementById('jb-status').value,start_date:document.getElementById('jb-start').value||null,end_date:document.getElementById('jb-end').value||null,value:parseFloat(document.getElementById('jb-value').value)||0,invoice_num:document.getElementById('jb-invoice').value||null,notes:document.getElementById('jb-notes').value||null};
   if(editId){
+    const oldJob = await q('jobs',{eq:{id:editId}}).then(r=>r[0]).catch(()=>null);
     await upd('jobs',editId,row);
-    await ins('audit_log',{action:'EDIT',table_name:'jobs',record_id:editId,description:'Job edited: '+title,done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    const changes=[];
+    if(oldJob?.title!==title) changes.push('Title: '+(oldJob?.title||'—')+' → '+title);
+    if(oldJob?.status!==row.status) changes.push('Status: '+(oldJob?.status||'—')+' → '+row.status);
+    if(oldJob?.value!=row.value) changes.push('Value: RM'+(oldJob?.value||0)+' → RM'+row.value);
+    await ins('audit_log',{action:'EDIT',table_name:'jobs',record_id:editId,
+      description:'Job edited: '+(changes.length?changes.join(', '):title),
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
     document.getElementById('jobModal')._editId=null;
   } else {
     const saved=await ins('jobs',row);
@@ -2485,8 +2505,23 @@ async function saveStaff(){
   if(!name)return alert('Name required.');
   const editId=document.getElementById('staffModal')._editId;
   const row={name,role:document.getElementById('sf-role').value,type:document.getElementById('sf-type').value,phone:document.getElementById('sf-phone').value,ic:document.getElementById('sf-ic').value,salary:parseFloat(document.getElementById('sf-salary').value)||0,start_date:document.getElementById('sf-start').value||null,notes:document.getElementById('sf-notes').value||null};
-  if(editId){await upd('staff',editId,row);document.getElementById('staffModal')._editId=null;}
-  else { await ins('staff',row); }
+  if(editId){
+    const oldStaff = await q('staff',{eq:{id:editId}}).then(r=>r[0]).catch(()=>null);
+    await upd('staff',editId,row);
+    const changes=[];
+    if(oldStaff?.name!==name) changes.push('Name: '+(oldStaff?.name||'—')+' → '+name);
+    if(oldStaff?.role!==row.role) changes.push('Role: '+(oldStaff?.role||'—')+' → '+row.role);
+    if(oldStaff?.salary!=row.salary) changes.push('Salary: RM'+(oldStaff?.salary||0)+' → RM'+row.salary);
+    await ins('audit_log',{action:'EDIT',table_name:'staff',record_id:editId,
+      description:'Staff edited: '+(changes.length?changes.join(', '):name),
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+    document.getElementById('staffModal')._editId=null;
+  } else {
+    const saved=await ins('staff',row);
+    await ins('audit_log',{action:'ADD',table_name:'staff',record_id:saved?.id,
+      description:'Staff added: '+name+' ('+row.role+')',
+      done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
+  }
   document.getElementById('staffModal').classList.remove('open');
   renderStaff();
 }
