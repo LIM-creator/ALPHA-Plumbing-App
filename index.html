@@ -1479,9 +1479,13 @@ async function saveTx(){
     await upd('transactions', txEditId, row);
     // Fetch old value for history detail
     const oldTx = await q('transactions',{eq:{id:txEditId}}).then(r=>r[0]).catch(()=>null);
-    const oldDesc = oldTx ? oldTx.description+' RM'+oldTx.amount : '—';
+    const txChanges=[];
+    if(oldTx?.description!==desc) txChanges.push('Description: '+( oldTx?.description||'—')+' → '+desc);
+    if(parseFloat(oldTx?.amount)!==amount) txChanges.push('Amount: RM'+(oldTx?.amount||0)+' → RM'+amount);
+    if(oldTx?.type!==txType) txChanges.push('Type: '+(oldTx?.type||'—')+' → '+txType);
+    if(oldTx?.category!==cat) txChanges.push('Category: '+(oldTx?.category||'—')+' → '+cat);
     await ins('audit_log',{action:'EDIT',table_name:'transactions',record_id:txEditId,
-      description:oldDesc+' → '+desc+' RM'+amount,
+      description:txChanges.length?txChanges.join(', '):desc+' (no changes)',
       done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
   } else {
     // New transaction
@@ -1896,6 +1900,19 @@ function updateDocTotal(){
   document.getElementById('doc-sst').onchange=updateDocTotal;
 }
 
+function updateStartPreview(dateVal) {
+  const el = document.getElementById('doc-start-preview');
+  if(!el || !dateVal) return;
+  const d = new Date(dateVal);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  el.textContent = 'Can start on ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function toggleCustomDuration(val) {
+  const custom = document.getElementById('doc-duration-custom');
+  if(custom) custom.style.display = val === 'custom' ? 'block' : 'none';
+}
+
 function getDurationText() {
   const sel = document.getElementById('doc-duration')?.value;
   if(!sel) return '';
@@ -2064,8 +2081,13 @@ async function recordPayment(id,total,paid){
   const recNum=await nextNum('receipts','num','REC');
   await ins('receipts',{num:recNum,invoice_num:inv.num,invoice_id:id,client_id:inv.client_id,date:todate(),amount:amt,type:newStatus==='paid'?'full':type,notes:type==='deposit'?'50% deposit received. Balance due on completion.':'Payment received. Thank you!'});
 
+  const payChanges = [
+    'Amount: RM'+fmtNum(amt)+' ('+type+')',
+    'Status: '+(inv.status||'unpaid')+' → '+newStatus,
+    'Invoice: '+inv.num
+  ].join(', ');
   await ins('audit_log',{action:'STATUS_CHANGE',table_name:'invoices',record_id:id,
-    description:`Payment of RM${fmtNum(amt)} recorded (${type}) → Status: ${newStatus} — ${inv.num}`,
+    description:payChanges,
     done_by:'Owner',done_at:new Date().toISOString()}).catch(()=>{});
   alert(`Payment of ${fmt(amt)} recorded!\nReceipt ${recNum} auto-generated.\nTransaction added to cash flow.`);
   renderInvoices();
@@ -2655,56 +2677,106 @@ async function renderHistory() {
   let logs = await q('audit_log',{order:'done_at',asc:false});
   if(!logs.length) {
     document.getElementById('history-table').innerHTML =
-      '<div class="empty"><p>No activity recorded yet.<br>Every add, edit, delete and status change will appear here.</p></div>';
+      '<div class="empty"><p>No activity recorded yet.<br>Every add, edit, delete and status change will appear here automatically.</p></div>';
     return;
   }
   if(action) logs = logs.filter(l=>l.action===action);
   if(table) logs = logs.filter(l=>l.table_name===table);
 
-  const actionColors = {ADD:'var(--green)',EDIT:'var(--blue)',DELETE:'var(--red)',STATUS_CHANGE:'var(--amber)'};
-  const actionIcons  = {ADD:'＋',EDIT:'✏',DELETE:'🗑',STATUS_CHANGE:'↔'};
-  const actionLabels = {ADD:'Added',EDIT:'Edited',DELETE:'Deleted',STATUS_CHANGE:'Status changed'};
-  const moduleLabels = {transactions:'Cash Flow',quotations:'Quotations',invoices:'Invoices',
-    clients:'Clients',jobs:'Jobs',staff:'Staff',receipts:'Receipts'};
+  // Group by day
+  const days = {};
+  logs.forEach(l => {
+    const dt = l.done_at ? new Date(l.done_at) : null;
+    const dayKey = dt ? dt.toLocaleDateString('en-MY',{day:'numeric',month:'long',year:'numeric'}) : 'Unknown date';
+    const isToday = dt && new Date().toDateString() === dt.toDateString();
+    const isYest = dt && new Date(Date.now()-864e5).toDateString() === dt.toDateString();
+    const label = isToday ? 'Today — '+dayKey : isYest ? 'Yesterday — '+dayKey : dayKey;
+    if(!days[label]) days[label] = [];
+    days[label].push(l);
+  });
 
-  document.getElementById('history-table').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px">
-    ${logs.map(l => {
-      const dt = l.done_at ? new Date(l.done_at) : null;
-      const dateStr = dt
-        ? dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})
-          +' · '+dt.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})
-        : '—';
-      const color = actionColors[l.action]||'var(--text3)';
-      const icon  = actionIcons[l.action]||'•';
-      const label = actionLabels[l.action]||l.action;
-      const module = moduleLabels[l.table_name]||l.table_name||'System';
+  const iconCfg = {
+    ADD:          {icon:'ti-plus',   bg:'#E1F5EE',color:'#085041', label:'Added'},
+    EDIT:         {icon:'ti-edit',   bg:'#FAEEDA',color:'#633806', label:'Edited'},
+    DELETE:       {icon:'ti-trash',  bg:'#FAECE7',color:'#993C1D', label:'Deleted'},
+    STATUS_CHANGE:{icon:'ti-receipt',bg:'#E6F1FB',color:'#185FA5', label:'Payment / Status'},
+  };
+  const moduleLabel = t=>({transactions:'Cash Flow',quotations:'Quotations',invoices:'Invoices',
+    clients:'Clients',jobs:'Jobs',staff:'Staff',receipts:'Receipts'}[t]||t||'System');
 
-      // Parse description for "from → to" display
-      const desc = l.description||'—';
-      const hasArrow = desc.includes(' → ');
-      let mainDesc = desc;
-      let changeDetail = '';
-      if(hasArrow) {
-        const parts = desc.split(' → ');
-        mainDesc = parts[0];
-        changeDetail = parts.slice(1).join(' → ');
+  function renderEntry(l) {
+    const cfg = iconCfg[l.action] || {icon:'ti-clock',bg:'var(--surface2)',color:'var(--text2)',label:l.action};
+    const dt = l.done_at ? new Date(l.done_at) : null;
+    const timeStr = dt ? dt.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'}) : '';
+    const mod = moduleLabel(l.table_name);
+
+    // Parse description — look for field changes in format "Field: old → new"
+    const desc = l.description||'';
+    const lines = desc.split(', ');
+    let title = lines[0] || '—';
+    const changes = [];
+
+    // Detect "Name: old → new" pattern in lines
+    lines.forEach((line,i) => {
+      const arrowMatch = line.match(/^([^:]+):\s*(.+?)\s*→\s*(.+)$/);
+      if(arrowMatch) {
+        if(i===0) title = mod + ' record updated';
+        changes.push({field:arrowMatch[1].trim(), old:arrowMatch[2].trim(), nw:arrowMatch[3].trim()});
+      } else if(i===0) {
+        title = line;
+      } else if(line.trim()) {
+        // Additional info lines
+        changes.push({field:'', old:'', nw:line.trim(), info:true});
       }
+    });
 
-      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
-        <div style="width:34px;height:34px;border-radius:8px;background:${color}18;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:${color}">${icon}</div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-            <span style="background:${color}18;color:${color};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${label}</span>
-            <span style="background:var(--surface2);color:var(--text2);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${module}</span>
-          </div>
-          <div style="font-size:13px;color:var(--text);font-weight:500;margin-bottom:${changeDetail?'4px':'0'}">${mainDesc}</div>
-          ${changeDetail ? `<div style="font-size:12px;color:var(--text2);background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:'DM Mono',monospace">→ ${changeDetail}</div>` : ''}
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">${dateStr} · by ${l.done_by||'Owner'}</div>
+    // Build changes block
+    let changeHtml = '';
+    if(changes.length) {
+      changeHtml = '<div style="background:var(--surface2);border-radius:7px;padding:7px 10px;margin-top:5px">'
+        + changes.map(c => c.info
+          ? `<div style="font-size:12px;color:var(--text2);padding:2px 0">${escHtml(c.nw)}</div>`
+          : `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;flex-wrap:wrap">
+              <span style="font-size:11px;color:var(--text3);min-width:70px">${escHtml(c.field)}</span>
+              ${c.old ? `<span style="font-size:12px;color:var(--text3);text-decoration:line-through">${escHtml(c.old)}</span>
+              <span style="font-size:11px;color:var(--text3)">→</span>` : ''}
+              <span style="font-size:12px;color:var(--text);font-weight:500">${escHtml(c.nw)}</span>
+            </div>`
+        ).join('')
+        + '</div>';
+    } else if(l.action !== 'ADD') {
+      // For actions without parsed changes, show raw description
+      changeHtml = `<div style="background:var(--surface2);border-radius:7px;padding:7px 10px;margin-top:5px;font-size:12px;color:var(--text2)">${escHtml(desc)}</div>`;
+    }
+
+    return `<div style="display:flex;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);margin-bottom:6px;align-items:flex-start">
+      <div style="width:32px;height:32px;border-radius:8px;background:${cfg.bg};color:${cfg.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px">
+        <i class="ti ${cfg.icon}" aria-hidden="true"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+          <span style="background:${cfg.bg};color:${cfg.color};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${cfg.label}</span>
+          <span style="background:var(--surface2);color:var(--text2);padding:2px 7px;border-radius:10px;font-size:10px">${mod}</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:auto">${timeStr}</span>
         </div>
-      </div>`;
-    }).join('')}
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${escHtml(title)}</div>
+        ${changeHtml}
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">by ${l.done_by||'Owner'}${l.record_id?' · ref #'+l.record_id:''}</div>
+      </div>
     </div>`;
+  }
+
+  const html = Object.entries(days).map(([dayLabel, entries]) => `
+    <div style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:8px 0 6px;display:flex;align-items:center;gap:8px">
+        ${escHtml(dayLabel)}
+        <span style="flex:1;height:0.5px;background:var(--border)"></span>
+      </div>
+      ${entries.map(renderEntry).join('')}
+    </div>`).join('');
+
+  document.getElementById('history-table').innerHTML = html ||
+    '<div class="empty"><p>No results match your filters.</p></div>';
 }
 
 async function clearHistory() {
